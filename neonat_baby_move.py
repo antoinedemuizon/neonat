@@ -7,6 +7,8 @@ from gamspy import (Container, Set, Parameter, Variable,
                     Alias, Equation, Model, Sum, Sense,
                     Domain, ModelStatus, Ord, Card)
 
+from utils import mapping_creation
+
 
 SCRIPT_DIR = osp.dirname(__file__)
 
@@ -15,6 +17,7 @@ def new_room_alloc_simple(babies_list, old_rooms_list, new_rooms_list):
     """
     From an old allocation of babies in the neonat service,
     Give the new relevant allocation while capacity reduction.
+    Take into accounts a new and an old list of rooms.
     """
     # Model
     alloc_model = Container()
@@ -132,7 +135,17 @@ def new_room_alloc_simple(babies_list, old_rooms_list, new_rooms_list):
 def read_input(input_path):
     """
     Read input specific for new_room_alloc_cplx.
-    TODO : refactorer creation df mapping : pd.series(index=pd.MultiIndex.from_frame)
+
+    Data description :
+    - services_list : a list containing service names ;
+    - babies_list : a list containing babies id ;
+    - babies_potential_df : a list of tuples with all possible service a baby
+        can go ;
+    - old_rooms_list : list of all the previous occupied rooms
+    - new_rooms_list : list of all new rooms (for instance, withdraw the one
+        of the historical floor of a service if summer cleaning)
+    - new_rooms_service_df : all the services a room can deliver
+    - old_alloc_df : previous room for each baby
     """
     xls_read = pd.ExcelFile(input_path)
     with xls_read as xls:
@@ -148,12 +161,8 @@ def read_input(input_path):
         babies_potential_df = babies_sheet[['babies', 'babies_potential']]
         babies_potential_df['babies_potential'] = babies_potential_df['babies_potential'].str.split(",")
         babies_potential_df = babies_potential_df.explode('babies_potential')
-        babies['babies_potential_df'] = pd.Series(
-            index=pd.MultiIndex.from_frame(babies_potential_df)
-        )
-        babies['old_alloc_df'] = pd.Series(
-            index=pd.MultiIndex.from_frame(babies_sheet[['babies', 'old_alloc_list']]).drop_duplicates()
-        )
+        babies['babies_potential_df'] = mapping_creation(babies_potential_df)
+        babies['old_alloc_df'] = mapping_creation(babies_sheet[['babies', 'old_alloc_list']])
 
         # Rooms sheet
         rooms = {}
@@ -170,8 +179,7 @@ def read_input(input_path):
         new_rooms_service_df['new_rooms_service'] = new_rooms_service_df['new_rooms_service'].str.split(",")
         new_rooms_service_df = new_rooms_service_df.explode('new_rooms_service')
 
-        new_rooms_service_df = pd.MultiIndex.from_frame(new_rooms_service_df.dropna())
-        rooms['new_rooms_service_df'] = pd.Series(index=new_rooms_service_df)
+        rooms['new_rooms_service_df'] = mapping_creation(new_rooms_service_df)
         rooms['rooms_capacities_df'] = rooms_sheet[['all_rooms', 'rooms_capacities']].dropna()
 
     return services, babies, rooms
@@ -182,23 +190,14 @@ def new_room_alloc_cplx(services,
                         rooms):
     """
     From an old allocation of babies in the neonat service,
-    Give the new relevant allocation while room number reduces services includes
+    Gives the new relevant allocation while rooms number reduces services includes
     new rooms list.
 
     Inputs :
-    - services_list : a list containing service names ;
-    - babies_list : a list containing babies id ;
-    - babies_potential_df : a list of tuples with all possible service a baby
-        can go ;
-    - old_rooms_list : list of all the previous occupied rooms
-    - new_rooms_list : list of all new rooms (for instance, withdraw the one
-        of the historical floor of a service if summer cleaning)
-    - new_rooms_service_df : all the services a room can deliver
-    - old_alloc_df : previous room for each baby
+    - services : a dict containing services data ;
+    - babies : a dict containing babies data ;
+    - rooms : a dict containing rooms data ;
 
-    TODO : input uniquement l'output de read_input() -> donne directement acces
-        all_rooms par ex
-    TODO : adapt the test to excel input
     TODO : set can be fed with pd.Series -> retirer "list()"
     TODO : add soin dimension : map(bb, required_soin) +
     map(room, possible_soin)
@@ -214,29 +213,30 @@ def new_room_alloc_cplx(services,
 
     # Load inputs
     services_list=services['services_list']
+
     babies_list=babies['babies_list']
     babies_potential_df=babies['babies_potential_df']
+    old_alloc_df=babies['old_alloc_df']
+
     old_rooms_list=rooms['old_rooms']
     new_rooms_list=rooms['new_rooms']
     new_rooms_service_df=rooms['new_rooms_service_df']
     rooms_capacities_df=rooms['rooms_capacities_df']
-    old_alloc_df=babies['old_alloc_df']
 
-    # Set
-    # Services
+    # Services sets, maps and parameters
     services = Set(container=alloc_model,
                    name='services',
                    description='service')
     services.setRecords(services_list)
 
-    # Rooms sets and maps
+    # Rooms sets, maps and parameters
     all_rooms_list = dict.fromkeys(old_rooms_list + new_rooms_list + ['out'])
     all_rooms = Set(container=alloc_model,
                     name="all_rooms",
                     description="all rooms")
     all_rooms.setRecords(list(all_rooms_list.keys()))    
 
-    # Subset
+    ## Subset
     old_rooms = Set(container=alloc_model,
                     domain=all_rooms,
                     name="old_rooms",
@@ -280,7 +280,7 @@ def new_room_alloc_cplx(services,
         records=rooms_capacities_df
     )
 
-    # Babies sets and maps
+    # Babies sets, maps and parameters
     babies = Set(container=alloc_model, name="babies", description="babies")
     babies.setRecords(babies_list)
 
@@ -312,14 +312,6 @@ def new_room_alloc_cplx(services,
         type="binary",
         description="binary variable which equals 1 if baby is in room",
     )
-    
-    distance_btw_rooms = Variable(
-        container=alloc_model,
-        name="DISTANCE_BTW_ROOMS",
-        domain=[babies],
-        type='integer',
-        description='distance between the old and the new room of a baby'
-    )
 
     # EQUATIONS
     # Equation each baby has a room
@@ -350,53 +342,24 @@ def new_room_alloc_cplx(services,
     eq_room_capacity[new_rooms] = (Sum(babies, bin_baby_room[babies, new_rooms])
                                    <= rooms_capacities[new_rooms])
 
-    # Defines baby move distance with distance_btw_rooms
-    eq_baby_move_distance = Equation(        
-        container=alloc_model,
-        name="eq_baby_move_distance",
-        domain=[babies],
-        description="defines the distance between old and new baby room"
-    )
-
-    ################# TEST : add penalty distance ###########################
-    eq_baby_move_distance[babies] = (distance_btw_rooms[babies]
-                                     == Sum(
-                                         map_old_alloc[babies, old_rooms],
-                                         Ord(old_rooms)/len(all_rooms))
-                                        #  - Sum(new_places,
-                                        #         # bin_baby_room[babies, new_places]
-                                        #         Ord(new_places))
-                                        )
-
-    # import pdb ; pdb.set_trace()
-                                        #  Sum(map_old_alloc[babies, old_rooms],
-                                        #          Ord(old_rooms)))
-
-    ###################### End Test #####################################
-    # OBJ : add a penalty if room ord is too far from previous one
-    # TODO : add an option for this penalty ?
+    # OBJ
     obj = (
         Sum(map_old_alloc[babies, old_rooms_kept],
                bin_baby_room[babies, old_rooms_kept])
-        # -
-        # Sum(babies, distance_btw_rooms[babies])
         )
     
     list_of_eq = [eq_baby_has_room, eq_room_capacity]
-    # if True:
-    #     list_of_eq.append(eq_baby_move_distance)
 
     alloc_mod = Model(
         alloc_model,
         name="alloc_model",
         equations=list_of_eq,
-        # equations=[eq_baby_has_room, eq_room_capacity, eq_baby_move_distance],
         problem="MIP",
         sense=Sense.MAX,
         objective=obj,
     )
 
-    alloc_mod.solve()  # output=sys.stdout)
+    alloc_mod.solve()
     if alloc_mod.status.value > 2.0:
         # TODO : realize more control on model coherence.
         # Exemple : controler le nb de chambres rea + nb d'eft rea ; vérifier chambres hybrides

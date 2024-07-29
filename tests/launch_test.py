@@ -47,7 +47,7 @@ def call_new_room_alloc_cplx(nrt_name):
 
 def test_new_room_alloc_cplx1():
     """
-    Test new_room_alloc_cplx function on excel NRT1
+    NRT1 : Test new_room_alloc_cplx function on a simple example.
     """
     obj, alloc_babies_rooms = call_new_room_alloc_cplx('nrt1')
     expected_alloc_bb_rooms = pd.DataFrame([['bb1', 'r1'],
@@ -68,7 +68,7 @@ def test_new_room_alloc_cplx1():
 
 def test_new_room_alloc_cplx_mltpl_srv_per_room():
     """
-    To show that a room can propose one among multiple service.
+    NTR2 : To show that a room can propose one among multiple service.
     """
     obj, alloc_babies_rooms = call_new_room_alloc_cplx('nrt2')
     expected_alloc_bb_rooms = pd.DataFrame([['bb1', 'r1'],
@@ -89,8 +89,7 @@ def test_new_room_alloc_cplx_mltpl_srv_per_room():
 
 def test_new_room_alloc_cplx_unfeas():
     """
-    Test new_room_alloc_cplx function NRT3.
-    Not enough place in rea.
+    NRT3 : Not enough place in rea.
     """
     with pytest.raises(Exception) as e_info:
         obj, alloc_babies_rooms = call_new_room_alloc_cplx('nrt3')
