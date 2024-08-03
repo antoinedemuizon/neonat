@@ -181,6 +181,7 @@ def read_input(input_path):
 
         rooms['new_rooms_service_df'] = mapping_creation(new_rooms_service_df)
         rooms['rooms_capacities_df'] = rooms_sheet[['all_rooms', 'rooms_capacities']].dropna()
+        rooms['priority'] = rooms_sheet[['all_rooms', 'priority']].dropna()
 
     return services, babies, rooms
 
@@ -251,7 +252,7 @@ def new_room_alloc_cplx(services,
 
     old_rooms_kept = Set(container=alloc_model,
                          name="old_rooms_kept",
-                         domain=old_rooms,
+                         domain=all_rooms,
                          description="old rooms kept for new configuration")
     old_rooms_kept_list = [room for room in old_rooms_list
                                 if room in new_rooms_list]
@@ -280,6 +281,14 @@ def new_room_alloc_cplx(services,
         records=rooms_capacities_df
     )
 
+    priority = Parameter(
+        container=alloc_model,        
+        name='rooms_priority',
+        domain=[all_rooms],
+        description='If a room is subject to priority',
+        records=rooms['priority']
+    )
+
     # Babies sets, maps and parameters
     babies = Set(container=alloc_model, name="babies", description="babies")
     babies.setRecords(babies_list)
@@ -297,7 +306,7 @@ def new_room_alloc_cplx(services,
     map_old_alloc = Set(
         container=alloc_model,
         name='map_old_alloc',
-        domain=[babies, old_rooms],
+        domain=[babies, all_rooms],
         description='map the old rooms to the babies',
         uels_on_axes=True,
         records=old_alloc_df,
@@ -355,18 +364,22 @@ def new_room_alloc_cplx(services,
     eq_room_capacity[new_rooms] = (Sum(babies, bin_baby_room[babies, new_rooms])
                                    <= rooms_capacities[new_rooms])
 
-    # OBJ
+    # OBJ : minimize the number of changes
     obj = (
-        Sum(map_old_alloc[babies, old_rooms_kept],
-               bin_baby_room[babies, old_rooms_kept])
+        Sum(Domain(babies, all_rooms).where[~map_old_alloc[babies, all_rooms]],
+            Sum((map_babies_potential[[babies, services]],
+                 map_new_rooms_service[new_places[all_rooms], services]),
+                (Ord(services))**priority[all_rooms] * bin_baby_room[babies, all_rooms]
+            )
         )
-    
+    )
+
     alloc_mod = Model(
         alloc_model,
         name="alloc_model",
         equations=alloc_model.getEquations(),
         problem="MIP",
-        sense=Sense.MAX,
+        sense=Sense.MIN,
         objective=obj,
     )
 
@@ -385,6 +398,7 @@ def new_room_alloc_cplx(services,
     summary = alloc_babies_rooms.merge(old_alloc_df.reset_index(),
                                        how='left',
                                        on='babies')
+
     summary = summary.drop(columns=[0])
     summary['move'] = summary['all_rooms'] != summary['old_alloc_list']
     summary.columns = ['babies', 'new_place', 'old_place', 'should_move']
@@ -421,8 +435,12 @@ def run_neonat():
 
     result, obj = new_room_alloc_cplx(services, babies, rooms)
 
-    print(obj)
+    baby_move_nb = result['should_move'].sum()
+    print(f'{baby_move_nb} out of {len(result)} babies should change rooms.')
     print(result)
+    ###
+    print(f'obj fun is equal to {obj}')
+    ###
     write_output(xls_output_path, result)
 
 

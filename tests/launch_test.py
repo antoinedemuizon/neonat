@@ -45,7 +45,7 @@ def call_new_room_alloc_cplx(nrt_name):
     return obj, alloc_babies_rooms
 
 
-def test_new_room_alloc_cplx1():
+def test_new_room_alloc_cplx_nrt1():
     """
     NRT1 : Test new_room_alloc_cplx function on a simple example.
     """
@@ -62,11 +62,13 @@ def test_new_room_alloc_cplx1():
                                             ['bb10', 'out']],
                                             columns=['babies', 'new_place']
                                             )
-    assert obj == 5
+    expected_obj = 5
+
+    assert obj == expected_obj
     assert (alloc_babies_rooms == expected_alloc_bb_rooms).all().all()
 
 
-def test_new_room_alloc_cplx_mltpl_srv_per_room():
+def test_new_room_alloc_cplx_nrt2():
     """
     NTR2 : To show that a room can propose one among multiple service.
     """
@@ -80,14 +82,41 @@ def test_new_room_alloc_cplx_mltpl_srv_per_room():
                                             ['bb7', 'r6'],
                                             ['bb8', 'out'],
                                             ['bb9', 'out'],
-                                            ['bb10', 'out']],
+                                            ['bb10', 'out'],
+                                            ['bb11', 'out']],
                                             columns=['babies', 'new_place']
                                             )
-    assert obj == 5
+    expected_obj = 6
+
+    assert obj == expected_obj
     assert (alloc_babies_rooms == expected_alloc_bb_rooms).all().all()
 
 
-def test_new_room_alloc_cplx_unfeas():
+def test_new_room_alloc_cplx_prio():
+    """
+    To ensure the priority is well taken into account.
+    Here, priority optimum is less good than without it.
+    TODO : same :/ Solution without priority :
+   babies new_place
+0     bb1        r8
+1     bb2        r7
+2     bb3        r9
+3     bb4        r10
+    """
+    obj, alloc_babies_rooms = call_new_room_alloc_cplx('test_priority')
+    expected_alloc_bb_rooms = pd.DataFrame([['bb1', 'r8'],
+                                            ['bb2', 'r7'],
+                                            ['bb3', 'r9'],
+                                            ['bb4', 'r10']],
+                                            columns=['babies', 'new_place']
+                                            )
+    expected_obj = 4
+
+    assert obj == expected_obj
+    assert (alloc_babies_rooms == expected_alloc_bb_rooms).all().all()
+
+
+def test_new_room_alloc_cplx_nrt3():
     """
     NRT3 : Not enough place in rea.
     """
