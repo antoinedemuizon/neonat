@@ -1,6 +1,6 @@
 @echo off
 
-call C:\Users\VS5997\Envs\gamspy\Scripts\activate.bat
+call C:\Users\VS5997\Envs\neonat\Scripts\activate.bat
 echo What is the scenario you want to execute ?
 set /p NAME=
 
