@@ -316,20 +316,33 @@ def new_room_alloc_cplx(services,
     # EQUATIONS
     # Equation each baby has a room
 
-    eq_baby_has_room = Equation(
+    eq_baby_relevant_service = Equation(
         container=alloc_model,
-        name="eq_baby_has_room",
+        name="eq_baby_relevant_service",
         domain=[babies],
-        description="each baby needs a new room or goes out"
+        description="each baby needs a new place with the relevant service"
     )
 
     # Baby can only be in a room with the relevant service : 
-    eq_baby_has_room[babies] = (Sum(services,
+    eq_baby_relevant_service[babies] = (Sum(services,
                                     Sum((map_babies_potential[babies, services],
                                      map_new_rooms_service[new_places, services]),
                                 bin_baby_room[babies, new_places]))
                                 == 1)
 
+    # Equation a baby only one room
+
+    eq_baby_one_room = Equation(
+        container=alloc_model,
+        name="eq_baby_one_room",
+        domain=[babies],
+        description="a baby should have only one room"
+    )
+
+    # Baby can only be in a room with the relevant service : 
+    eq_baby_one_room[babies] = (Sum(all_rooms,
+                                    bin_baby_room[babies, all_rooms])
+                                == 1)
 
     # Equation each room cannot have more babies than 1
     eq_room_capacity = Equation(
@@ -348,12 +361,10 @@ def new_room_alloc_cplx(services,
                bin_baby_room[babies, old_rooms_kept])
         )
     
-    list_of_eq = [eq_baby_has_room, eq_room_capacity]
-
     alloc_mod = Model(
         alloc_model,
         name="alloc_model",
-        equations=list_of_eq,
+        equations=alloc_model.getEquations(),
         problem="MIP",
         sense=Sense.MAX,
         objective=obj,
