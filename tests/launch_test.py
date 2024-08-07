@@ -95,19 +95,20 @@ def test_new_room_alloc_cplx_nrt2():
 def test_new_room_alloc_cplx_prio():
     """
     To ensure the priority is well taken into account.
-    Here, priority optimum is less good than without it.
-    TODO : same :/ Solution without priority :
+    Solution without priority :
    babies new_place
-0     bb1        r8
-1     bb2        r7
-2     bb3        r9
-3     bb4        r10
+0     bb1        r5
+1     bb2        r6
+2     bb3        r7
+3     bb4        r8
+    Here, priority optimum switch bb3 and bb4 from r7 and r8
+    to r10 and r9, because r7 and r9 "soins" is deprecated.
     """
     obj, alloc_babies_rooms = call_new_room_alloc_cplx('test_priority')
-    expected_alloc_bb_rooms = pd.DataFrame([['bb1', 'r8'],
-                                            ['bb2', 'r7'],
-                                            ['bb3', 'r9'],
-                                            ['bb4', 'r10']],
+    expected_alloc_bb_rooms = pd.DataFrame([['bb1', 'r5'],
+                                            ['bb2', 'r6'],
+                                            ['bb3', 'r10'],
+                                            ['bb4', 'r9']],
                                             columns=['babies', 'new_place']
                                             )
     expected_obj = 4
@@ -125,4 +126,27 @@ def test_new_room_alloc_cplx_nrt3():
 
     assert str(e_info.value) == ('Problem is IntegerInfeasible.'
                                  ' There might be a problem of data.')
+
+
+def test_new_room_alloc_cplx_nrt4():
+    """
+    NRT4 : specific treatments.
+    """
+    obj, alloc_babies_rooms = call_new_room_alloc_cplx('nrt4')
+    expected_alloc_bb_rooms = pd.DataFrame([['bb1', 'r3'],
+                                            ['bb2', 'r2'],
+                                            ['bb3', 'r1'],
+                                            ['bb4', 'r6'],
+                                            ['bb5', 'r4'],
+                                            ['bb6', 'r5'],
+                                            ['bb7', 'r7'],
+                                            ['bb8', 'out'],
+                                            ['bb9', 'out'],
+                                            ['bb10', 'out']],
+                                            columns=['babies', 'new_place']
+                                            )
+    expected_obj = 8
+
+    assert obj == expected_obj
+    assert (alloc_babies_rooms == expected_alloc_bb_rooms).all().all()
 

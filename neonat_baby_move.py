@@ -164,6 +164,12 @@ def read_input(input_path):
         babies['babies_potential_df'] = mapping_creation(babies_potential_df)
         babies['old_alloc_df'] = mapping_creation(babies_sheet[['babies', 'old_alloc_list']])
 
+        # TODO : comment signifier qu'une chambre accueillant un traitement
+        #        peut accueillir des no_treatments ?
+        nan_treatment = babies_sheet['treatment'].fillna('no_treatment')
+        babies_sheet['treatment'] = nan_treatment
+        babies['babies_treatment_df'] = mapping_creation(babies_sheet[['babies', 'treatment']])
+
         # Rooms sheet
         rooms = {}
         rooms_sheet = pd.read_excel(xls, 'rooms')
@@ -183,6 +189,12 @@ def read_input(input_path):
         rooms['rooms_capacities_df'] = rooms_sheet[['all_rooms', 'rooms_capacities']].dropna()
         rooms['priority'] = rooms_sheet[['all_rooms', 'priority']].dropna()
 
+        nan_treatment = rooms_sheet['treatment'].fillna('no_treatment')
+        rooms_sheet['treatment'] = nan_treatment
+        rooms['treatment'] = rooms_sheet['treatment'].drop_duplicates().dropna()
+        map_room_treatment_df = rooms_sheet[['all_rooms', 'treatment']].drop_duplicates().dropna()
+        rooms['rooms_treatment_df'] = mapping_creation(map_room_treatment_df)
+
     return services, babies, rooms
 
 
@@ -199,10 +211,6 @@ def new_room_alloc_cplx(services,
     - babies : a dict containing babies data ;
     - rooms : a dict containing rooms data ;
 
-    TODO : set can be fed with pd.Series -> retirer "list()"
-    TODO : add soin dimension : map(bb, required_soin) +
-    map(room, possible_soin)
-    TODO (pas obligé) : control equivalent solutions (or find a way to show them all) ;
     TODO : control errors :
          - inputs : induire des erreurs (mismatch orthographe set/map,
             mismatch taille des parametres, ...)
@@ -213,23 +221,32 @@ def new_room_alloc_cplx(services,
     alloc_model = Container()
 
     # Load inputs
-    services_list=services['services_list']
+    services_list = services['services_list']
+    treatment_list = rooms['treatment']
 
-    babies_list=babies['babies_list']
-    babies_potential_df=babies['babies_potential_df']
-    old_alloc_df=babies['old_alloc_df']
+    babies_list = babies['babies_list']
+    babies_potential_df = babies['babies_potential_df']
+    old_alloc_df = babies['old_alloc_df']
+    babies_treatment_df = babies['babies_treatment_df']
 
     all_rooms_list = rooms['all_rooms']
-    old_rooms_list=rooms['old_rooms']
-    new_rooms_list=rooms['new_rooms']
-    new_rooms_service_df=rooms['new_rooms_service_df']
-    rooms_capacities_df=rooms['rooms_capacities_df']
+    old_rooms_list = rooms['old_rooms']
+    new_rooms_list = rooms['new_rooms']
+    new_rooms_service_df = rooms['new_rooms_service_df']
+    rooms_capacities_df = rooms['rooms_capacities_df']
+    rooms_treatment_df = rooms['rooms_treatment_df']
 
     # Services sets, maps and parameters
     services = Set(container=alloc_model,
                    name='services',
                    description='service')
     services.setRecords(services_list)
+
+    # Treatment sets, maps and parameters
+    treatment = Set(container=alloc_model,
+                   name='treatment',
+                   description='treatment')
+    treatment.setRecords(treatment_list)
 
     # Rooms sets, maps and parameters
     all_rooms = Set(container=alloc_model,
@@ -290,6 +307,15 @@ def new_room_alloc_cplx(services,
         records=rooms['priority']
     )
 
+    map_rooms_treatment = Set(
+        container=alloc_model,        
+        name='map_rooms_treatment',
+        domain=[all_rooms, treatment],
+        description='If a room allows a certain treatment',
+        uels_on_axes=True,
+        records=rooms_treatment_df
+    )
+
     # Babies sets, maps and parameters
     babies = Set(container=alloc_model, name="babies", description="babies")
     babies.setRecords(babies_list)
@@ -311,6 +337,15 @@ def new_room_alloc_cplx(services,
         description='map the old rooms to the babies',
         uels_on_axes=True,
         records=old_alloc_df,
+    )
+
+    map_babies_treatment = Set(
+        container=alloc_model,        
+        name='map_babies_treatment',
+        domain=[babies, treatment],
+        description='If a baby needs a certain treatment',
+        uels_on_axes=True,
+        records=babies_treatment_df
     )
 
     # VARIABLES
@@ -336,6 +371,23 @@ def new_room_alloc_cplx(services,
     eq_baby_relevant_service[babies] = (Sum(services,
                                             Sum((map_babies_potential[babies, services],
                                                  map_new_rooms_service[new_places, services]),
+                                                bin_baby_room[babies, new_places]
+                                            )
+                                        )
+                                        == 1)
+
+    # Equation each baby has a room with the relevant treatment
+
+    eq_baby_relevant_treatment = Equation(
+        container=alloc_model,
+        name="eq_baby_relevant_treatment",
+        domain=[babies],
+        description="each baby needs a new place with the relevant treatment"
+    )
+
+    eq_baby_relevant_treatment[babies] = (Sum(treatment,
+                                            Sum((map_babies_treatment[babies, treatment],
+                                                 map_rooms_treatment[new_places, treatment]),
                                                 bin_baby_room[babies, new_places]
                                             )
                                         )
