@@ -157,7 +157,7 @@ def read_input(input_path):
         # Babies sheet
         babies = {}
         babies_sheet = pd.read_excel(xls, 'babies')
-        babies['babies_list'] = list(babies_sheet['babies'].drop_duplicates())
+        babies['babies_list'] = babies_sheet['babies'].drop_duplicates()
         babies_potential_df = babies_sheet[['babies', 'babies_potential']]
         babies_potential_df['babies_potential'] = babies_potential_df['babies_potential'].str.split(",")
         babies_potential_df = babies_potential_df.explode('babies_potential')
@@ -167,19 +167,19 @@ def read_input(input_path):
         # Rooms sheet
         rooms = {}
         rooms_sheet = pd.read_excel(xls, 'rooms')
-        rooms['all_rooms'] = list(rooms_sheet['all_rooms'].drop_duplicates())
-        rooms['new_rooms'] = list(rooms_sheet[
-                                rooms_sheet['new_rooms'] == 'yes']['all_rooms'])
-        rooms['old_rooms'] = list(rooms_sheet[
-                                rooms_sheet['old_rooms'] == 'yes']['all_rooms'])
-        rooms['going_out'] = list(rooms_sheet[
-                                rooms_sheet['going_out'] == 'yes']['all_rooms'])
+        rooms['all_rooms'] = rooms_sheet['all_rooms'].drop_duplicates()
+        rooms['new_rooms'] = rooms_sheet[
+                                rooms_sheet['new_rooms'] == 'yes']['all_rooms']
+        rooms['old_rooms'] = rooms_sheet[
+                                rooms_sheet['old_rooms'] == 'yes']['all_rooms']
+        rooms['going_out'] = rooms_sheet[
+                                rooms_sheet['going_out'] == 'yes']['all_rooms']
 
         new_rooms_service_df = rooms_sheet[['all_rooms', 'new_rooms_service']]
         new_rooms_service_df['new_rooms_service'] = new_rooms_service_df['new_rooms_service'].str.split(",")
         new_rooms_service_df = new_rooms_service_df.explode('new_rooms_service')
-
         rooms['new_rooms_service_df'] = mapping_creation(new_rooms_service_df)
+
         rooms['rooms_capacities_df'] = rooms_sheet[['all_rooms', 'rooms_capacities']].dropna()
         rooms['priority'] = rooms_sheet[['all_rooms', 'priority']].dropna()
 
@@ -219,6 +219,7 @@ def new_room_alloc_cplx(services,
     babies_potential_df=babies['babies_potential_df']
     old_alloc_df=babies['old_alloc_df']
 
+    all_rooms_list = rooms['all_rooms']
     old_rooms_list=rooms['old_rooms']
     new_rooms_list=rooms['new_rooms']
     new_rooms_service_df=rooms['new_rooms_service_df']
@@ -231,11 +232,10 @@ def new_room_alloc_cplx(services,
     services.setRecords(services_list)
 
     # Rooms sets, maps and parameters
-    all_rooms_list = dict.fromkeys(old_rooms_list + new_rooms_list + ['out'])
     all_rooms = Set(container=alloc_model,
                     name="all_rooms",
                     description="all rooms")
-    all_rooms.setRecords(list(all_rooms_list.keys()))    
+    all_rooms.setRecords(all_rooms_list)
 
     ## Subset
     old_rooms = Set(container=alloc_model,
@@ -254,15 +254,16 @@ def new_room_alloc_cplx(services,
                          name="old_rooms_kept",
                          domain=all_rooms,
                          description="old rooms kept for new configuration")
-    old_rooms_kept_list = [room for room in old_rooms_list
-                                if room in new_rooms_list]
+    old_rooms_kept_list = old_rooms_list[old_rooms_list.isin(new_rooms_list)]
     old_rooms_kept.setRecords(old_rooms_kept_list)
-    
+
     new_places = Set(container=alloc_model,
                      name="new_places",
                      domain=all_rooms,
                      description="new places")
-    new_places.setRecords(new_rooms_list + ['out'])
+    new_places_df = new_rooms_list.copy().reset_index(drop=True)
+    new_places_df.loc[len(new_places_df)] = 'out'
+    new_places.setRecords(new_places_df)
 
     map_new_rooms_service = Set(
         container=alloc_model,
@@ -323,7 +324,7 @@ def new_room_alloc_cplx(services,
     )
 
     # EQUATIONS
-    # Equation each baby has a room
+    # Equation each baby has a room with the the relevant service
 
     eq_baby_relevant_service = Equation(
         container=alloc_model,
@@ -332,14 +333,15 @@ def new_room_alloc_cplx(services,
         description="each baby needs a new place with the relevant service"
     )
 
-    # Baby can only be in a room with the relevant service : 
     eq_baby_relevant_service[babies] = (Sum(services,
-                                    Sum((map_babies_potential[babies, services],
-                                     map_new_rooms_service[new_places, services]),
-                                bin_baby_room[babies, new_places]))
-                                == 1)
+                                            Sum((map_babies_potential[babies, services],
+                                                 map_new_rooms_service[new_places, services]),
+                                                bin_baby_room[babies, new_places]
+                                            )
+                                        )
+                                        == 1)
 
-    # Equation a baby only one room
+    # Equation a baby has only one room
 
     eq_baby_one_room = Equation(
         container=alloc_model,
@@ -348,12 +350,11 @@ def new_room_alloc_cplx(services,
         description="a baby should have only one room"
     )
 
-    # Baby can only be in a room with the relevant service : 
     eq_baby_one_room[babies] = (Sum(all_rooms,
                                     bin_baby_room[babies, all_rooms])
                                 == 1)
 
-    # Equation each room cannot have more babies than 1
+    # Equation each room cannot have more babies than its capacity
     eq_room_capacity = Equation(
         container=alloc_model,
         name="eq_room_capacity",
@@ -369,7 +370,7 @@ def new_room_alloc_cplx(services,
         Sum(Domain(babies, all_rooms).where[~map_old_alloc[babies, all_rooms]],
             Sum((map_babies_potential[[babies, services]],
                  map_new_rooms_service[new_places[all_rooms], services]),
-                (Ord(services))**priority[all_rooms] * bin_baby_room[babies, all_rooms]
+                Ord(services)**priority[all_rooms] * bin_baby_room[babies, all_rooms]
             )
         )
     )
