@@ -7,7 +7,7 @@ from gamspy import (Container, Set, Parameter, Variable,
                     Alias, Equation, Model, Sum, Sense,
                     Domain, ModelStatus, Ord, Card)
 
-from utils import mapping_creation
+from utils import mapping_creation, map_list_control, excel_control
 
 
 SCRIPT_DIR = osp.dirname(__file__)
@@ -149,6 +149,9 @@ def read_input(input_path):
     """
     xls_read = pd.ExcelFile(input_path)
     with xls_read as xls:
+        valid_control = excel_control(xls)
+        if not valid_control:
+            raise AssertionError('The input Excel file has not the good column names.')
         # Service sheet
         services = {}
         services_sheet = pd.read_excel(xls, 'services')
@@ -225,6 +228,10 @@ def new_room_alloc_cplx(services,
     alloc_model = Container()
 
     # Load inputs
+    valid_control = map_list_control(services, babies, rooms)
+    if not valid_control:
+        raise AssertionError('There is some incoherence in your dataset, please reconsider it.')
+
     services_list = services['services_list']
     treatment_list = rooms['treatment']
 
