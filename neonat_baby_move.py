@@ -11,6 +11,7 @@ from utils import mapping_creation, map_list_control, excel_control
 
 
 SCRIPT_DIR = osp.dirname(__file__)
+pd.options.mode.copy_on_write = True
 
 
 def new_room_alloc_simple(babies_list, old_rooms_list, new_rooms_list):
