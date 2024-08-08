@@ -164,8 +164,6 @@ def read_input(input_path):
         babies['babies_potential_df'] = mapping_creation(babies_potential_df)
         babies['old_alloc_df'] = mapping_creation(babies_sheet[['babies', 'old_alloc_list']])
 
-        # TODO : comment signifier qu'une chambre accueillant un traitement
-        #        peut accueillir des no_treatments ?
         nan_treatment = babies_sheet['treatment'].fillna('no_treatment')
         babies_sheet['treatment'] = nan_treatment
         babies['babies_treatment_df'] = mapping_creation(babies_sheet[['babies', 'treatment']])
@@ -190,10 +188,16 @@ def read_input(input_path):
         rooms['priority'] = rooms_sheet[['all_rooms', 'priority']].dropna()
 
         nan_treatment = rooms_sheet['treatment'].fillna('no_treatment')
-        rooms_sheet['treatment'] = nan_treatment
-        rooms['treatment'] = rooms_sheet['treatment'].drop_duplicates().dropna()
-        map_room_treatment_df = rooms_sheet[['all_rooms', 'treatment']].drop_duplicates().dropna()
-        rooms['rooms_treatment_df'] = mapping_creation(map_room_treatment_df)
+        rooms_sheet['treatment_list'] = nan_treatment
+        rooms['treatment'] = rooms_sheet['treatment_list'].drop_duplicates().dropna()
+
+        # A room with specific treatment can be assign to a baby without treatment
+        room_treatment_list = nan_treatment + ',no_treatment'
+        rooms_sheet['treatment'] = room_treatment_list
+        map_room_treatment_df = rooms_sheet[['all_rooms', 'treatment']]
+        map_room_treatment_df['treatment'] = map_room_treatment_df['treatment'].str.split(",")
+        map_room_treatment_df = map_room_treatment_df.explode('treatment')
+        rooms['rooms_treatment_df'] = mapping_creation(map_room_treatment_df.drop_duplicates())
 
     return services, babies, rooms
 
