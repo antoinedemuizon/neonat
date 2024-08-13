@@ -150,3 +150,39 @@ def test_new_room_alloc_cplx_nrt4():
     assert obj == expected_obj
     assert (alloc_babies_rooms == expected_alloc_bb_rooms).all().all()
 
+
+def test_new_room_alloc_cplx_nrt5(capsys):
+    """
+    NRT5 : causing errors with data errors.
+    """
+    with pytest.raises(Exception) as e_info:
+        obj, alloc_babies_rooms = call_new_room_alloc_cplx('nrt5')
+
+    captured = capsys.readouterr()
+    assert captured.out == ('Error in babies_potential data.\n'
+                            'Error in old_alloc_list data.\n'
+                            'Error in treatment data.\n'
+                            'Error in new_rooms_service data.\n'
+                            "The duos ('service', 'treatment') >>> "
+                            "[('soins', 'catheter'), ('neoe', 'no_treatment')]"
+                            " <<< do not exist in rooms data.\n")
+
+    assert str(e_info.value) == ('There is some errors in your dataset mappings,'
+                                 ' please reconsider it.')
+
+
+def test_new_room_alloc_cplx_nrt7(capsys):
+    """
+    NRT7 : causing errors data incoherence.
+    """
+    with pytest.raises(Exception) as e_info:
+        obj, alloc_babies_rooms = call_new_room_alloc_cplx('nrt7')
+
+    captured = capsys.readouterr()
+    assert captured.out == (
+            "The duos ('service', 'treatment') "
+            ">>> [('rea', 'not_vi')] <<< do not exist in rooms data.\n"
+            )
+
+    assert str(e_info.value) == ('There is some errors in your dataset mappings,'
+                                 ' please reconsider it.')

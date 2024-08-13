@@ -7,7 +7,8 @@ from gamspy import (Container, Set, Parameter, Variable,
                     Alias, Equation, Model, Sum, Sense,
                     Domain, ModelStatus, Ord, Card)
 
-from utils import mapping_creation, map_list_control, excel_control
+from utils import (DataError, mapping_creation,
+                   map_list_control, excel_control)
 
 
 SCRIPT_DIR = osp.dirname(__file__)
@@ -229,9 +230,10 @@ def new_room_alloc_cplx(services,
     alloc_model = Container()
 
     # Load inputs
-    valid_control = map_list_control(services, babies, rooms)
-    if not valid_control:
-        raise AssertionError('There is some incoherence in your dataset, please reconsider it.')
+    ## Mapping control
+    data_control = map_list_control(services, babies, rooms)
+    if not data_control:
+        raise DataError('There is some errors in your dataset mappings, please reconsider it.')
 
     services_list = services['services_list']
     treatment_list = rooms['treatment']

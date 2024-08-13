@@ -57,27 +57,50 @@ def assert_map_in_set(validation, map_df, xls_col, set_ds):
 
 def map_list_control(services, babies, rooms):
     """
-    Several inputs we check to ensure the proper use of the tool.
+    Several inputs we check to ensure the proper use of the tool:
+    Ensure the gams objects mapping have no more data than their corresponding sets.
     """
     validation = True
 
     # Check mapping
-    ## Babies
+    ## Babies should not pretend to a service that is not declared in sheet "services"
     babypot = babies['babies_potential_df']
     srvc = services['services_list']
     validation = assert_map_in_set(validation, babypot, 'babies_potential', srvc)
 
+    ## Babies should not have an old room that is not declared in sheet "rooms"
     bboldalloc = babies['old_alloc_df']
     allr = rooms['all_rooms']
     validation = assert_map_in_set(validation, bboldalloc, 'old_alloc_list', allr)
 
+    ## Babies should not have an treatment that is not declared in sheet "rooms"
     bbtreat = babies['babies_treatment_df']
     alltreat = rooms['treatment']
     validation = assert_map_in_set(validation, bbtreat, 'treatment', alltreat)
 
-    ## Babies
+    ## Rooms should not have an treatment that is not declared in sheet "rooms"
     roomsrvc = rooms['new_rooms_service_df']
     srvc = services['services_list']
     validation = assert_map_in_set(validation, roomsrvc, 'new_rooms_service', srvc)
 
+    # Tuple ('svc', 'treatment') for babies should be in the one of rooms
+    map_svc_treat_bb = pd.concat([bbtreat.reset_index(),
+                                    babypot.reset_index()],
+                                    axis=1
+                                )[['babies_potential', 'treatment']].drop_duplicates()
+    map_svc_treat_rm = pd.concat([roomsrvc.reset_index(),
+                               rooms['rooms_treatment_df'].reset_index()],
+                               axis=1)[['new_rooms_service', 'treatment']].drop_duplicates()
+    d1 = pd.MultiIndex.from_frame(map_svc_treat_bb.dropna())
+    d2 = pd.MultiIndex.from_frame(map_svc_treat_rm.dropna())
+
+    validation_svc_treat = d1.isin(d2)
+    if not validation_svc_treat.all():
+        print(f"The duos ('service', 'treatment') >>> {d1[~validation_svc_treat].to_list()} <<< do not exist in rooms data.")
+        validation = False
+
     return validation
+
+
+class DataError(Exception):
+    pass
