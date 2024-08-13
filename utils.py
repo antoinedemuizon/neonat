@@ -102,5 +102,69 @@ def map_list_control(services, babies, rooms):
     return validation
 
 
+def count_element(mapping, dim1, dim2):
+    """
+    Function calculating the effective number of place available per service,
+    considering babies potential or rooms places.
+    If a room propose a place in 'rea' or in 'soins', there is 0.5 place for both.
+    Return a pd.Series.
+    """
+    map_df = pd.DataFrame(mapping)
+    dim1_index = map_df.index.get_level_values(dim1)
+    tmp = 1/map_df.groupby([dim1_index]).size()
+    count_dim1 = tmp.loc[dim1_index].values
+    map_df[f'count_{dim1}'] = count_dim1
+    count_dim1_per_dim2_df = map_df.groupby([map_df.index.get_level_values(dim2)]).sum()
+    count_dim1_per_dim2 = count_dim1_per_dim2_df[f'count_{dim1}']
+    if (dim2 in ['new_rooms_service', 'babies_potential']
+        and 'leave_hospital' in count_dim1_per_dim2):
+        count_dim1_per_dim2 = count_dim1_per_dim2.drop('leave_hospital')
+
+    return count_dim1_per_dim2
+
+
+def coherence_control(services, babies, rooms):
+    """
+    Several inputs we check to ensure the proper use of the tool:
+    check if there is risk of unfeasibility.
+    """
+    validation = True
+
+    # Incoherence in total nb of rooms
+    room_capacities = rooms['rooms_capacities_df']
+    new_rooms = rooms['new_rooms']
+    new_rooms_capa = room_capacities[room_capacities['all_rooms'].isin(new_rooms)]
+    tot_new_rooms_capa = new_rooms_capa['rooms_capacities'].sum()
+
+    bb_rm_pot_index = babies['babies_potential_df'].index
+    mask_babies_room_potential = ~bb_rm_pot_index.get_level_values('babies_potential').isin(['leave_hospital'])
+    tot_baby_need = len(bb_rm_pot_index[mask_babies_room_potential])
+
+    # More precisely :
+    count_rooms_per_svc = count_element(rooms['new_rooms_service_df'],
+                                        'all_rooms', 'new_rooms_service')
+    count_bb_per_svc = count_element(babies['babies_potential_df'],
+                                     'babies', 'babies_potential')
+    count_bb_per_svc.sort_index(inplace=True)
+
+    compare_tot = count_bb_per_svc - count_rooms_per_svc > 0
+    compare = count_bb_per_svc - count_rooms_per_svc >= 1
+    # import pdb ; pdb.set_trace()
+    if tot_baby_need > tot_new_rooms_capa:
+        print(f'Not enough rooms in {compare_tot[compare_tot].index.to_list()} service(s).')
+        validation = False
+
+    elif compare.any():
+        print('Enough total nb of rooms, but not enough rooms'
+              f' in {compare[compare].index.to_list()} service(s).')
+        validation = False
+
+    return validation
+
+
 class DataError(Exception):
+    pass
+
+
+class IncoherentDataError(Exception):
     pass

@@ -124,8 +124,8 @@ def test_new_room_alloc_cplx_nrt3():
     with pytest.raises(Exception) as e_info:
         obj, alloc_babies_rooms = call_new_room_alloc_cplx('nrt3')
 
-    assert str(e_info.value) == ('Problem is IntegerInfeasible.'
-                                 ' There might be a problem of data.')
+    assert str(e_info.value) == ('There is a risk of unfeasability '
+                                 'in your dataset, please reconsider it.')
 
 
 def test_new_room_alloc_cplx_nrt4():
@@ -169,6 +169,20 @@ def test_new_room_alloc_cplx_nrt5(capsys):
 
     assert str(e_info.value) == ('There is some errors in your dataset mappings,'
                                  ' please reconsider it.')
+
+
+def test_new_room_alloc_cplx_nrt6(capsys):
+    """
+    NRT6 : causing errors data incoherence.
+    """
+    with pytest.raises(Exception) as e_info:
+        obj, alloc_babies_rooms = call_new_room_alloc_cplx('nrt6')
+
+    captured = capsys.readouterr()
+    assert captured.out == ("Not enough rooms in ['neo', 'rea'] service(s).\n")
+
+    assert str(e_info.value) == ('There is a risk of unfeasability '
+                                 'in your dataset, please reconsider it.')
 
 
 def test_new_room_alloc_cplx_nrt7(capsys):
