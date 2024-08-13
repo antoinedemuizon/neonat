@@ -4,8 +4,7 @@ import pandas as pd
 import argparse
 
 from gamspy import (Container, Set, Parameter, Variable,
-                    Alias, Equation, Model, Sum, Sense,
-                    Domain, ModelStatus, Ord, Card)
+                    Equation, Model, Sum, Sense, Domain, Ord)
 
 from utils import (DataError, IncoherentDataError, mapping_creation,
                    map_list_control, excel_control, coherence_control)
