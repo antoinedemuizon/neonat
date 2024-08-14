@@ -1,9 +1,10 @@
 import os.path as osp
 import pandas as pd
 import pytest
+import logging
 
 from neonat_baby_move import (new_room_alloc_simple, new_room_alloc_cplx,
-                              read_input, write_output, SCRIPT_DIR)
+                              read_input, set_logging, SCRIPT_DIR)
 
 
 def test_new_room_alloc_simple():
@@ -151,52 +152,77 @@ def test_new_room_alloc_cplx_nrt4():
     assert (alloc_babies_rooms == expected_alloc_bb_rooms).all().all()
 
 
-def test_new_room_alloc_cplx_nrt5(capsys):
+def test_new_room_alloc_cplx_nrt5(caplog):
     """
     NRT5 : causing errors with data errors.
     """
     with pytest.raises(Exception) as e_info:
         obj, alloc_babies_rooms = call_new_room_alloc_cplx('nrt5')
 
-    captured = capsys.readouterr()
-    assert captured.out == ('Error in babies_potential data.\n'
-                            'Error in old_alloc_list data.\n'
-                            'Error in treatment data.\n'
-                            'Error in new_rooms_service data.\n'
-                            "The duos ('service', 'treatment') >>> "
-                            "[('soins', 'catheter'), ('neoe', 'no_treatment')]"
-                            " <<< do not exist in rooms data.\n")
+    caplog.set_level(logging.INFO)
+    assert caplog.messages == ["Be careful, there might be an error in >>> babies_potential <<< data : are the element >>> ['neoe'] <<< well written ?",
+                               "Be careful, there might be an error in >>> old_alloc_list <<< data : are the element >>> ['r19'] <<< well written ?",
+                               "Be careful, there might be an error in >>> treatment <<< data : are the element >>> ['catheter'] <<< well written ?",
+                               "Be careful, there might be an error in >>> new_rooms_service <<< data : are the element >>> ['reak'] <<< well written ?",
+                               "Be careful, the pairs ('service', 'treatment') >>> [('soins', 'catheter'), ('neoe', 'no_treatment')] <<< do not exist in rooms data."]
 
     assert str(e_info.value) == ('There is some errors in your dataset mappings,'
                                  ' please reconsider it.')
 
 
-def test_new_room_alloc_cplx_nrt6(capsys):
+def test_new_room_alloc_cplx_nrt6(caplog):
     """
     NRT6 : causing errors data incoherence.
     """
     with pytest.raises(Exception) as e_info:
         obj, alloc_babies_rooms = call_new_room_alloc_cplx('nrt6')
 
-    captured = capsys.readouterr()
-    assert captured.out == ("Not enough rooms in ['neo', 'rea'] service(s).\n")
+    caplog.set_level(logging.INFO)
+    assert caplog.messages == ["Be careful, not enough rooms in ['neo', 'rea'] service(s)."]
 
     assert str(e_info.value) == ('There is a risk of unfeasability '
                                  'in your dataset, please reconsider it.')
 
 
-def test_new_room_alloc_cplx_nrt7(capsys):
+def test_new_room_alloc_cplx_nrt7(caplog):
     """
     NRT7 : causing errors data incoherence.
     """
     with pytest.raises(Exception) as e_info:
         obj, alloc_babies_rooms = call_new_room_alloc_cplx('nrt7')
 
-    captured = capsys.readouterr()
-    assert captured.out == (
-            "The duos ('service', 'treatment') "
-            ">>> [('rea', 'not_vi')] <<< do not exist in rooms data.\n"
-            )
+    caplog.set_level(logging.INFO)
+    assert caplog.messages == [
+            "Be careful, the pairs ('service', 'treatment') "
+            ">>> [('rea', 'not_vi')] <<< do not exist in rooms data."
+    ]
 
     assert str(e_info.value) == ('There is some errors in your dataset mappings,'
                                  ' please reconsider it.')
+
+
+def test_new_room_alloc_cplx_log():
+    """
+    Test log file generation.
+    """
+    test_name = 'test_log'
+    log_path = osp.join(SCRIPT_DIR, 'tests', test_name, 'log_' + test_name + '.log')
+    set_logging(log_path)
+
+    with pytest.raises(Exception) as e_info:
+        obj, alloc_babies_rooms = call_new_room_alloc_cplx(test_name)
+
+    assert str(e_info.value) == ('There is some errors in your dataset mappings,'
+                                 ' please reconsider it.')
+
+    log_file = open(log_path, "r")
+    content = log_file.read()
+
+    assert content == (
+        "WARNING:root:Be careful, there might be an error in >>> babies_potential <<< data : are the element >>> ['neoe'] <<< well written ?\n"
+        "WARNING:root:Be careful, there might be an error in >>> old_alloc_list <<< data : are the element >>> ['r19'] <<< well written ?\n"
+        "WARNING:root:Be careful, there might be an error in >>> treatment <<< data : are the element >>> ['catheter'] <<< well written ?\n"
+        "WARNING:root:Be careful, there might be an error in >>> new_rooms_service <<< data : are the element >>> ['reak'] <<< well written ?\n"
+        "WARNING:root:Be careful, the pairs ('service', 'treatment')"
+        " >>> [('soins', 'catheter'), ('neoe', 'no_treatment')] <<< do not exist in rooms data.\n")
+    log_file.close()

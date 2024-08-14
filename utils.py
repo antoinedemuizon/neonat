@@ -1,4 +1,5 @@
 import pandas as pd
+import logging
 
 
 def mapping_creation(df):
@@ -50,7 +51,9 @@ def assert_map_in_set(validation, map_df, xls_col, set_ds):
     """
     map_index = map_df.index.get_level_values(xls_col).drop_duplicates()
     if not map_index.isin(set_ds).all():
-        print(f'Error in {xls_col} data.')
+        black_list = map_index[~map_index.isin(set_ds)].to_list()
+        logging.warning(f'Be careful, there might be an error in >>> {xls_col} '
+                        f'<<< data : are the element >>> {black_list} <<< well written ?')
         validation = False
     return validation
 
@@ -96,7 +99,10 @@ def map_list_control(services, babies, rooms):
 
     validation_svc_treat = d1.isin(d2)
     if not validation_svc_treat.all():
-        print(f"The duos ('service', 'treatment') >>> {d1[~validation_svc_treat].to_list()} <<< do not exist in rooms data.")
+        logging.warning("Be careful, the pairs ('service', 'treatment') >>>"
+                        f" {d1[~validation_svc_treat].to_list()} "
+                        "<<< do not exist in rooms data."
+                        )
         validation = False
 
     return validation
@@ -149,14 +155,15 @@ def coherence_control(services, babies, rooms):
 
     compare_tot = count_bb_per_svc - count_rooms_per_svc > 0
     compare = count_bb_per_svc - count_rooms_per_svc >= 1
-    # import pdb ; pdb.set_trace()
+
     if tot_baby_need > tot_new_rooms_capa:
-        print(f'Not enough rooms in {compare_tot[compare_tot].index.to_list()} service(s).')
+        logging.warning('Be careful, not enough rooms in '
+                        f'{compare_tot[compare_tot].index.to_list()} service(s).')
         validation = False
 
     elif compare.any():
-        print('Enough total nb of rooms, but not enough rooms'
-              f' in {compare[compare].index.to_list()} service(s).')
+        logging.warning('Be careful, enough total nb of rooms, but not enough rooms'
+                        f' in {compare[compare].index.to_list()} service(s).')
         validation = False
 
     return validation

@@ -2,6 +2,7 @@
 import os.path as osp
 import pandas as pd
 import argparse
+import logging
 
 from gamspy import (Container, Set, Parameter, Variable,
                     Equation, Model, Sum, Sense, Domain, Ord)
@@ -12,6 +13,10 @@ from utils import (DataError, IncoherentDataError, mapping_creation,
 
 SCRIPT_DIR = osp.dirname(__file__)
 pd.options.mode.copy_on_write = True
+
+
+def set_logging(log_path):
+    logging.basicConfig(filename=log_path, filemode='w', force=True)  # , format='%(levelname)s:%(message)s')
 
 
 def new_room_alloc_simple(babies_list, old_rooms_list, new_rooms_list):
@@ -220,9 +225,6 @@ def new_room_alloc_cplx(services,
     - rooms : a dict containing rooms data ;
 
     TODO : control errors :
-         - inputs : induire des erreurs (mismatch orthographe set/map,
-            mismatch taille des parametres, ...)
-            Par exemple : si nb_bed < nb bebe not going out
          - modelstatus/solvestatus,
     """
     # Model
@@ -456,8 +458,6 @@ def new_room_alloc_cplx(services,
 
     alloc_mod.solve()
     if alloc_mod.status.value > 2.0:
-        # TODO : realize more control on model coherence.
-        # Exemple : controler le nb de chambres rea + nb d'eft rea ; vérifier chambres hybrides
         raise ValueError((f'Problem is {alloc_mod.status.name}. '
                          'There might be a problem of data.'))
 
@@ -501,6 +501,10 @@ def run_neonat():
                               'input_' + scenario_name + '.xlsx')
     xls_output_path = osp.join(SCRIPT_DIR, 'scenarios', scenario_name,
                                'output_' + scenario_name + '.xlsx')
+    log_path = osp.join(SCRIPT_DIR, 'scenarios', scenario_name,
+                        'log_' + scenario_name + '.log')
+
+    set_logging(log_path=log_path)
 
     services, babies, rooms = read_input(xls_input_path)
 
