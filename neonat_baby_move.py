@@ -213,7 +213,8 @@ def read_input(input_path):
 
 def new_room_alloc_cplx(services,
                         babies,
-                        rooms):
+                        rooms,
+                        force=False):
     """
     From an old allocation of babies in the neonat service,
     Gives the new relevant allocation while rooms number reduces services includes
@@ -233,12 +234,13 @@ def new_room_alloc_cplx(services,
     # Load inputs
     ## Mapping control
     data_control = map_list_control(services, babies, rooms)
-    if not data_control:
+    if not data_control and not force:
         raise DataError('There is some errors in your dataset mappings, please reconsider it.')
+        # TODO : capter ailleurs l'erreur de compilation GAMS ? car tjs pb si plrs bb avec svc multiple
 
     ## Coherence control  
     data_coherence_control = coherence_control(services, babies, rooms)
-    if not data_coherence_control:
+    if not data_coherence_control and not force:
         raise IncoherentDataError('There is a risk of unfeasability in your dataset, please reconsider it.')
 
     services_list = services['services_list']
@@ -494,9 +496,11 @@ def run_neonat():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument('scenario_name')
+    parser.add_argument('--force', action='store_true')
     args = parser.parse_args()
 
     scenario_name = args.scenario_name
+    force = args.force
     xls_input_path = osp.join(SCRIPT_DIR, 'scenarios', scenario_name,
                               'input_' + scenario_name + '.xlsx')
     xls_output_path = osp.join(SCRIPT_DIR, 'scenarios', scenario_name,
@@ -508,7 +512,7 @@ def run_neonat():
 
     services, babies, rooms = read_input(xls_input_path)
 
-    result, obj = new_room_alloc_cplx(services, babies, rooms)
+    result, obj = new_room_alloc_cplx(services, babies, rooms, force)
 
     baby_move_nb = result['should_move'].sum()
     print(f'{baby_move_nb} out of {len(result)} babies should change rooms.')
