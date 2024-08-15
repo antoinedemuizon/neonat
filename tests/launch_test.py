@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 import logging
 
-from neonat_baby_move import (new_room_alloc_simple, new_room_alloc_cplx,
+from neonat_baby_move import (new_room_alloc_simple, calc_room_allocation,
                               read_input, set_logging, SCRIPT_DIR)
 
 
@@ -27,9 +27,9 @@ def test_new_room_alloc_simple():
     print(alloc_babies_rooms)
 
 
-def call_new_room_alloc_cplx(nrt_name):
+def call_calc_room_allocation(nrt_name):
     """
-    Call new_room_alloc_cplx for nrt tests.
+    Call calc_room_allocation for nrt tests.
     Input : name of the scenario
     Return : objective function value (float), allocation of babies per rooms
         (pd.DataFrame)
@@ -37,7 +37,7 @@ def call_new_room_alloc_cplx(nrt_name):
     input_path = osp.join(SCRIPT_DIR, 'tests', nrt_name,
                           'input_' + nrt_name + '.xlsx')
     services, babies, rooms = read_input(input_path)
-    result, obj = new_room_alloc_cplx(
+    result, obj = calc_room_allocation(
         services=services,
         babies=babies,
         rooms=rooms
@@ -46,11 +46,11 @@ def call_new_room_alloc_cplx(nrt_name):
     return obj, alloc_babies_rooms
 
 
-def test_new_room_alloc_cplx_nrt1():
+def test_calc_room_allocation_nrt1():
     """
-    NRT1 : Test new_room_alloc_cplx function on a simple example.
+    NRT1 : Test calc_room_allocation function on a simple example.
     """
-    obj, alloc_babies_rooms = call_new_room_alloc_cplx('nrt1')
+    obj, alloc_babies_rooms = call_calc_room_allocation('nrt1')
     expected_alloc_bb_rooms = pd.DataFrame([['bb1', 'r1'],
                                             ['bb2', 'r2'],
                                             ['bb3', 'r3'],
@@ -69,11 +69,11 @@ def test_new_room_alloc_cplx_nrt1():
     assert (alloc_babies_rooms == expected_alloc_bb_rooms).all().all()
 
 
-def test_new_room_alloc_cplx_nrt2():
+def test_calc_room_allocation_nrt2():
     """
     NTR2 : To show that a room can propose one among multiple service.
     """
-    obj, alloc_babies_rooms = call_new_room_alloc_cplx('nrt2')
+    obj, alloc_babies_rooms = call_calc_room_allocation('nrt2')
     expected_alloc_bb_rooms = pd.DataFrame([['bb1', 'r1'],
                                             ['bb2', 'r2'],
                                             ['bb3', 'r3'],
@@ -93,7 +93,7 @@ def test_new_room_alloc_cplx_nrt2():
     assert (alloc_babies_rooms == expected_alloc_bb_rooms).all().all()
 
 
-def test_new_room_alloc_cplx_prio():
+def test_calc_room_allocation_prio():
     """
     To ensure the priority is well taken into account.
     Solution without priority :
@@ -105,7 +105,7 @@ def test_new_room_alloc_cplx_prio():
     Here, priority optimum switch bb3 and bb4 from r7 and r8
     to r10 and r9, because r7 and r9 "soins" is deprecated.
     """
-    obj, alloc_babies_rooms = call_new_room_alloc_cplx('test_priority')
+    obj, alloc_babies_rooms = call_calc_room_allocation('test_priority')
     expected_alloc_bb_rooms = pd.DataFrame([['bb1', 'r5'],
                                             ['bb2', 'r6'],
                                             ['bb3', 'r10'],
@@ -118,22 +118,22 @@ def test_new_room_alloc_cplx_prio():
     assert (alloc_babies_rooms == expected_alloc_bb_rooms).all().all()
 
 
-def test_new_room_alloc_cplx_nrt3():
+def test_calc_room_allocation_nrt3():
     """
     NRT3 : Not enough place in rea.
     """
     with pytest.raises(Exception) as e_info:
-        obj, alloc_babies_rooms = call_new_room_alloc_cplx('nrt3')
+        obj, alloc_babies_rooms = call_calc_room_allocation('nrt3')
 
     assert str(e_info.value) == ('There is a risk of unfeasability '
                                  'in your dataset, please reconsider it.')
 
 
-def test_new_room_alloc_cplx_nrt4():
+def test_calc_room_allocation_nrt4():
     """
     NRT4 : specific treatments.
     """
-    obj, alloc_babies_rooms = call_new_room_alloc_cplx('nrt4')
+    obj, alloc_babies_rooms = call_calc_room_allocation('nrt4')
     expected_alloc_bb_rooms = pd.DataFrame([['bb1', 'r3'],
                                             ['bb2', 'r2'],
                                             ['bb3', 'r1'],
@@ -152,30 +152,30 @@ def test_new_room_alloc_cplx_nrt4():
     assert (alloc_babies_rooms == expected_alloc_bb_rooms).all().all()
 
 
-def test_new_room_alloc_cplx_nrt5(caplog):
+def test_calc_room_allocation_nrt5(caplog):
     """
     NRT5 : causing errors with data errors.
     """
     with pytest.raises(Exception) as e_info:
-        obj, alloc_babies_rooms = call_new_room_alloc_cplx('nrt5')
+        obj, alloc_babies_rooms = call_calc_room_allocation('nrt5')
 
     caplog.set_level(logging.INFO)
-    assert caplog.messages == ["Be careful, there might be an error in >>> babies_potential <<< data : are the element >>> ['neoe'] <<< well written ?",
-                               "Be careful, there might be an error in >>> old_alloc_list <<< data : are the element >>> ['r19'] <<< well written ?",
-                               "Be careful, there might be an error in >>> treatment <<< data : are the element >>> ['catheter'] <<< well written ?",
-                               "Be careful, there might be an error in >>> new_rooms_service <<< data : are the element >>> ['reak'] <<< well written ?",
+    assert caplog.messages == ["Be careful, there might be an error in >>> babies_potential <<< data : are the element >>> ['neoe'] <<< present in other relevant datasets ?",
+                               "Be careful, there might be an error in >>> old_alloc_list <<< data : are the element >>> ['r19'] <<< present in other relevant datasets ?",
+                               "Be careful, there might be an error in >>> treatment <<< data : are the element >>> ['catheter'] <<< present in other relevant datasets ?",
+                               "Be careful, there might be an error in >>> new_rooms_service <<< data : are the element >>> ['reak'] <<< present in other relevant datasets ?",
                                "Be careful, the pairs ('service', 'treatment') >>> [('soins', 'catheter'), ('neoe', 'no_treatment')] <<< do not exist in rooms data."]
 
     assert str(e_info.value) == ('There is some errors in your dataset mappings,'
                                  ' please reconsider it.')
 
 
-def test_new_room_alloc_cplx_nrt6(caplog):
+def test_calc_room_allocation_nrt6(caplog):
     """
     NRT6 : causing errors data incoherence.
     """
     with pytest.raises(Exception) as e_info:
-        obj, alloc_babies_rooms = call_new_room_alloc_cplx('nrt6')
+        obj, alloc_babies_rooms = call_calc_room_allocation('nrt6')
 
     caplog.set_level(logging.INFO)
     assert caplog.messages == ["Be careful, not enough rooms in ['neo', 'rea'] service(s)."]
@@ -184,12 +184,12 @@ def test_new_room_alloc_cplx_nrt6(caplog):
                                  'in your dataset, please reconsider it.')
 
 
-def test_new_room_alloc_cplx_nrt7(caplog):
+def test_calc_room_allocation_nrt7(caplog):
     """
     NRT7 : causing errors data incoherence.
     """
     with pytest.raises(Exception) as e_info:
-        obj, alloc_babies_rooms = call_new_room_alloc_cplx('nrt7')
+        obj, alloc_babies_rooms = call_calc_room_allocation('nrt7')
 
     caplog.set_level(logging.INFO)
     assert caplog.messages == [
@@ -201,7 +201,7 @@ def test_new_room_alloc_cplx_nrt7(caplog):
                                  ' please reconsider it.')
 
 
-def test_new_room_alloc_cplx_log():
+def test_calc_room_allocation_log():
     """
     Test log file generation.
     """
@@ -210,7 +210,7 @@ def test_new_room_alloc_cplx_log():
     set_logging(log_path)
 
     with pytest.raises(Exception) as e_info:
-        obj, alloc_babies_rooms = call_new_room_alloc_cplx(test_name)
+        obj, alloc_babies_rooms = call_calc_room_allocation(test_name)
 
     assert str(e_info.value) == ('There is some errors in your dataset mappings,'
                                  ' please reconsider it.')
@@ -219,10 +219,14 @@ def test_new_room_alloc_cplx_log():
     content = log_file.read()
 
     assert content == (
-        "WARNING:root:Be careful, there might be an error in >>> babies_potential <<< data : are the element >>> ['neoe'] <<< well written ?\n"
-        "WARNING:root:Be careful, there might be an error in >>> old_alloc_list <<< data : are the element >>> ['r19'] <<< well written ?\n"
-        "WARNING:root:Be careful, there might be an error in >>> treatment <<< data : are the element >>> ['catheter'] <<< well written ?\n"
-        "WARNING:root:Be careful, there might be an error in >>> new_rooms_service <<< data : are the element >>> ['reak'] <<< well written ?\n"
+        "WARNING:root:Be careful, there might be an error in >>> babies_potential <<< data :"
+        " are the element >>> ['neoe'] <<< present in other relevant datasets ?\n"
+        "WARNING:root:Be careful, there might be an error in >>> old_alloc_list <<< data :"
+        " are the element >>> ['r19'] <<< present in other relevant datasets ?\n"
+        "WARNING:root:Be careful, there might be an error in >>> treatment <<< data :"
+        " are the element >>> ['catheter'] <<< present in other relevant datasets ?\n"
+        "WARNING:root:Be careful, there might be an error in >>> new_rooms_service <<< data :"
+        " are the element >>> ['reak'] <<< present in other relevant datasets ?\n"
         "WARNING:root:Be careful, the pairs ('service', 'treatment')"
         " >>> [('soins', 'catheter'), ('neoe', 'no_treatment')] <<< do not exist in rooms data.\n")
     log_file.close()

@@ -140,7 +140,7 @@ def new_room_alloc_simple(babies_list, old_rooms_list, new_rooms_list):
 
 def read_input(input_path):
     """
-    Read input specific for new_room_alloc_cplx.
+    Read input specific for calc_room_allocation.
 
     Data description :
     - services_list : a list containing service names ;
@@ -211,10 +211,10 @@ def read_input(input_path):
     return services, babies, rooms
 
 
-def new_room_alloc_cplx(services,
-                        babies,
-                        rooms,
-                        force=False):
+def calc_room_allocation(services,
+                         babies,
+                         rooms,
+                         force=False):
     """
     From an old allocation of babies in the neonat service,
     Gives the new relevant allocation while rooms number reduces services includes
@@ -236,7 +236,6 @@ def new_room_alloc_cplx(services,
     data_control = map_list_control(services, babies, rooms)
     if not data_control and not force:
         raise DataError('There is some errors in your dataset mappings, please reconsider it.')
-        # TODO : capter ailleurs l'erreur de compilation GAMS ? car tjs pb si plrs bb avec svc multiple
 
     ## Coherence control  
     data_coherence_control = coherence_control(services, babies, rooms)
@@ -512,7 +511,7 @@ def run_neonat():
 
     services, babies, rooms = read_input(xls_input_path)
 
-    result, obj = new_room_alloc_cplx(services, babies, rooms, force)
+    result, obj = calc_room_allocation(services, babies, rooms, force)
 
     baby_move_nb = result['should_move'].sum()
     print(f'{baby_move_nb} out of {len(result)} babies should change rooms.')

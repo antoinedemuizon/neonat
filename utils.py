@@ -53,7 +53,7 @@ def assert_map_in_set(validation, map_df, xls_col, set_ds):
     if not map_index.isin(set_ds).all():
         black_list = map_index[~map_index.isin(set_ds)].to_list()
         logging.warning(f'Be careful, there might be an error in >>> {xls_col} '
-                        f'<<< data : are the element >>> {black_list} <<< well written ?')
+                        f'<<< data : are the element >>> {black_list} <<< present in other relevant datasets ?')
         validation = False
     return validation
 
