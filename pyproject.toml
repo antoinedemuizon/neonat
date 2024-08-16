@@ -1,18 +1,49 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "neonat_babies_dispatch"
-version = "0.0.1"
+name = "neonat_baby_move"
+version = "0.1.0"
 authors = [
   { name="Antoine de Muizon", email="antoinedemuizon@hotmail.fr" },
 ]
-description = "A small example package"
+description = "A tool giving the best allocation of rooms for babies in the hospital' neonatalogy department."
 readme = "README.md"
 requires-python = ">=3.8"
+license = {text = "MIT License"}
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
+    "License :: OSI Approved :: MIT License"
+]
+dependencies = [
+'annotated-types',
+'certifi',
+'colorama',
+'et-xmlfile',
+'exceptiongroup',
+'gamspy',
+'iniconfig',
+'numpy ',
+'openpyxl',
+'packaging',
+'pandas',
+'pip',
+'pluggy',
+'pydantic',
+'pydantic_core',
+'pytest',
+'python-dateutilost',
+'pytz',
+'scipy',
+'setuptools',
+'six',
+'tomli',
+'typing_extensions',
+'tzdata',
+'urllib',
+'wheel',
 ]
 
 [project.urls]
-Homepage = "https://github.com/pypa/sampleproject"
-Issues = "https://github.com/pypa/sampleproject/issues"
+Homepage = "https://github.com/antoinedemuizon/neonat.git"

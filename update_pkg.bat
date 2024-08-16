@@ -1,5 +1,5 @@
 @echo off
 
-call git
+call git pull
 
 pause
