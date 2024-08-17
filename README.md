@@ -59,6 +59,7 @@ Vous êtes ensuite invités à remplir :
       Ce traitement doit obligatoirement être présent dans la liste de traitements de l'onglet *rooms*.
 
 - Dans l'onglet *rooms* :
+    - Ne pas toucher la ligne "out" ;
     - La liste de TOUS LES LITS (colonne **all_rooms**). Ne pas modifier les cellules grises.
       On appelle abusivement *rooms* l'identifiant des lits. Ainsi, dans le cas de chambres doubles,
       chaque lit a son propre identifiant et ses propres caractéristiques.
@@ -91,7 +92,7 @@ Vous êtes ensuite invités à remplir :
 > Veiller à la cohérence des données entre elles. Par exemple, si dans l'onglet *services*,
 vous avez écrit les services suivants : ['reanimation', 'soins', 'neonat'], vous ne pouvez
 pas affecter un enfant ou une chambre à un service 'rea', car il n'apparait pas tel quel
-dans la liste de l'onglet *services*
+dans la liste de l'onglet *services*.
 
 Vous pouvez dupliquer le fichier d'input du dossier "scenario/exemple" comme base à compléter.
 
