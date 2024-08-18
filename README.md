@@ -18,20 +18,20 @@ Il s'appuie sur un simple fichier [Excel](#présentation-de-linput), et se lance
 
 Pour installer la bibliothèque, Vous aurez besoin d'installer :
 - [python](https://www.python.org/downloads/windows/) version **3.9.13**;
-  - S'assurer que la variable d'environnement PATH est enrichie des chemins pertinents,
-    "..\Python39\Scripts\" et "C:\Python39\" ;
+  - ATTENTION : Cliquer sur **Add Python to PATH** pour insérer les liens pertinents dans le PATH :
+  ![alt text](install_python_add_to_path.JPG) ;
+  Puis ajouter les fichiers sources de Python à la racine, en inscrivant **C:\Python39**
+  à l'option **Customize install location** ;
 - [git](https://git-scm.com/download/) et choisir le système d'exploitation
 parmi Windows, Linux, macOS ;
 
 Ensuite vous pouvez récupérer le projet depuis Github. Pour cela :
 - Cloner le répertoire du projet. Pour cela :
     - Ouvrir une Commande Prompt Windows ;
-    - Créer un répertoire "src/neonat" et s'y placer en lançant les commandes suivantes :
+    - Créer un répertoire "src" et s'y placer en lançant les commandes suivantes :
         ```
         mkdir src
         cd src
-        mkdir neonat
-        cd neonat
         ```
     - Cloner le répertoire : git clone https://github.com/antoinedemuizon/neonat.git
 - Initialiser le projet en double-cliquant sur *initialize_poject.bat*.
@@ -112,6 +112,10 @@ Si vous avez vérifié vos données, et qu'elles vous paraissent bonnes malgré 
 vous pouvez lancer le calcul en double-cliquant sur *launch_main.bat*,
 puis en ajoutant le paramètre "--force" à la question **If you want to force the process**.
 
+## Prochaines étapes
+
+Selon les besoins qui apparaitront, on peut ajouter une fonctionnalité qui vérifie
+la faisabilité d'une solution donnée par l'utilisateur.
 
 <!--
 
