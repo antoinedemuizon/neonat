@@ -3,15 +3,15 @@
 echo *************** Initialize the project - Run this .bat once only ***************
 
 call (
-    pip install virtualenvwrapper
+    pip install virtualenvwrapper-win
     pip install build
 
     mkvirtualenv neonat
     workon neonat
 
     python -m build
+    pip install -e .
 )
-mkdir scenario
 
 echo *************** Initialization is over. ***************
 

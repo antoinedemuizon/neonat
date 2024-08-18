@@ -17,7 +17,9 @@ Il s'appuie sur un simple fichier [Excel](#présentation-de-linput), et se lance
 ## Installation
 
 Pour installer la bibliothèque, Vous aurez besoin d'installer :
-- [python](https://www.python.org/downloads/) ;
+- [python](https://www.python.org/downloads/windows/) version **3.9.13**;
+  - S'assurer que la variable d'environnement PATH est enrichie des chemins pertinents,
+    "..\Python39\Scripts\" et "C:\Python39\" ;
 - [git](https://git-scm.com/download/) et choisir le système d'exploitation
 parmi Windows, Linux, macOS ;
 

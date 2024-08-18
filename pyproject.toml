@@ -17,31 +17,17 @@ classifiers = [
     "License :: OSI Approved :: MIT License"
 ]
 dependencies = [
-'annotated-types',
-'certifi',
 'colorama',
-'et-xmlfile',
 'exceptiongroup',
 'gamspy',
 'iniconfig',
-'numpy ',
 'openpyxl',
 'packaging',
-'pandas',
 'pip',
 'pluggy',
-'pydantic',
-'pydantic_core',
 'pytest',
-'python-dateutilost',
-'pytz',
-'scipy',
 'setuptools',
-'six',
 'tomli',
-'typing_extensions',
-'tzdata',
-'urllib',
 'wheel',
 ]
 
