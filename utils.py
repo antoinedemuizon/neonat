@@ -19,15 +19,15 @@ def excel_control(xls_file):
     dico_columns = {
         'services': ['services'],
         'babies': ['babies', 'babies_service', 'old_alloc_list', 'treatment'],
-        'rooms': ['all_rooms', 'new_rooms', 'old_rooms', 'going_out',
-                  'new_rooms_service','old_rooms_service', 'rooms_capacities',
+        'beds': ['all_beds', 'new_beds', 'old_beds', 'going_out',
+                  'new_beds_service','old_beds_service', 'beds_capacities',
                   'priority', 'treatment']
     }
 
     validation_tab_names = all(ele in xls_file.sheet_names for ele in dico_columns.keys())
     if not validation_tab_names:
         print('Error in Excel Worksheet names.')
-        print('You should have 3 worksheets : "babies", "rooms" and "services".')
+        print('You should have 3 worksheets : "babies", "beds" and "services".')
         validation = False
     
     for key in dico_columns.keys():
@@ -56,7 +56,7 @@ def assert_map_in_set(validation, map_df, xls_col, set_ds):
     return validation
 
 
-def map_list_control(services, babies, rooms):
+def map_list_control(services, babies, beds):
     """
     Several inputs we check to ensure the proper use of the tool:
     Ensure the gams objects mapping have no more data than their corresponding sets.
@@ -69,29 +69,29 @@ def map_list_control(services, babies, rooms):
     srvc = services['services_list']
     validation = assert_map_in_set(validation, babypot, 'babies_service', srvc)
 
-    ## Babies should not have an old room that is not declared in sheet "rooms"
+    ## Babies should not have an old bed that is not declared in sheet "beds"
     bboldalloc = babies['old_alloc_df']
-    allr = rooms['all_rooms']
+    allr = beds['all_beds']
     validation = assert_map_in_set(validation, bboldalloc, 'old_alloc_list', allr)
 
-    ## Babies should not have an treatment that is not declared in sheet "rooms"
+    ## Babies should not have an treatment that is not declared in sheet "beds"
     bbtreat = babies['babies_treatment_df']
-    alltreat = rooms['treatment']
+    alltreat = beds['treatment']
     validation = assert_map_in_set(validation, bbtreat, 'treatment', alltreat)
 
-    ## Rooms should not have an treatment that is not declared in sheet "rooms"
-    roomsrvc = rooms['new_rooms_service_df']
+    ## beds should not have an treatment that is not declared in sheet "beds"
+    bedsrvc = beds['new_beds_service_df']
     srvc = services['services_list']
-    validation = assert_map_in_set(validation, roomsrvc, 'new_rooms_service', srvc)
+    validation = assert_map_in_set(validation, bedsrvc, 'new_beds_service', srvc)
 
-    # Tuple ('svc', 'treatment') for babies should be in the one of rooms
+    # Tuple ('svc', 'treatment') for babies should be in the one of beds
     map_svc_treat_bb = pd.concat([bbtreat.reset_index(),
                                     babypot.reset_index()],
                                     axis=1
                                 )[['babies_service', 'treatment']].drop_duplicates()
-    map_svc_treat_rm = pd.concat([roomsrvc.reset_index(),
-                               rooms['rooms_treatment_df'].reset_index()],
-                               axis=1)[['new_rooms_service', 'treatment']].drop_duplicates()
+    map_svc_treat_rm = pd.concat([bedsrvc.reset_index(),
+                               beds['beds_treatment_df'].reset_index()],
+                               axis=1)[['new_beds_service', 'treatment']].drop_duplicates()
     d1 = pd.MultiIndex.from_frame(map_svc_treat_bb.dropna())
     d2 = pd.MultiIndex.from_frame(map_svc_treat_rm.dropna())
 
@@ -99,7 +99,7 @@ def map_list_control(services, babies, rooms):
     if not validation_svc_treat.all():
         logging.warning("Be careful, the pairs ('service', 'treatment') >>>"
                         f" {d1[~validation_svc_treat].to_list()} "
-                        "<<< do not exist in rooms data."
+                        "<<< do not exist in beds data."
                         )
         validation = False
 
@@ -109,8 +109,8 @@ def map_list_control(services, babies, rooms):
 def count_element(mapping, dim1, dim2):
     """
     Function calculating the effective number of place available per service,
-    considering babies service or rooms places.
-    If a room propose a place in 'rea' or in 'soins', there is 0.5 place for both.
+    considering babies service or beds places.
+    If a bed propose a place in 'rea' or in 'soins', there is 0.5 place for both.
     Return a pd.Series.
     """
     map_df = pd.DataFrame(mapping)
@@ -120,47 +120,47 @@ def count_element(mapping, dim1, dim2):
     map_df[f'count_{dim1}'] = count_dim1
     count_dim1_per_dim2_df = map_df.groupby([map_df.index.get_level_values(dim2)]).sum()
     count_dim1_per_dim2 = count_dim1_per_dim2_df[f'count_{dim1}']
-    if (dim2 in ['new_rooms_service', 'babies_service']
+    if (dim2 in ['new_beds_service', 'babies_service']
         and 'leave_hospital' in count_dim1_per_dim2):
         count_dim1_per_dim2 = count_dim1_per_dim2.drop('leave_hospital')
 
     return count_dim1_per_dim2
 
 
-def coherence_control(services, babies, rooms):
+def coherence_control(services, babies, beds):
     """
     Several inputs we check to ensure the proper use of the tool:
     check if there is risk of unfeasibility.
     """
     validation = True
 
-    # Incoherence in total nb of rooms
-    room_capacities = rooms['rooms_capacities_df']
-    new_rooms = rooms['new_rooms']
-    new_rooms_capa = room_capacities[room_capacities['all_rooms'].isin(new_rooms)]
-    tot_new_rooms_capa = new_rooms_capa['rooms_capacities'].sum()
+    # Incoherence in total nb of beds
+    bed_capacities = beds['beds_capacities_df']
+    new_beds = beds['new_beds']
+    new_beds_capa = bed_capacities[bed_capacities['all_beds'].isin(new_beds)]
+    tot_new_beds_capa = new_beds_capa['beds_capacities'].sum()
 
     bb_rm_pot_index = babies['babies_service_df'].index
-    mask_babies_room_potential = ~bb_rm_pot_index.get_level_values('babies_service').isin(['leave_hospital'])
-    tot_baby_need = len(bb_rm_pot_index[mask_babies_room_potential])
+    mask_babies_bed_potential = ~bb_rm_pot_index.get_level_values('babies_service').isin(['leave_hospital'])
+    tot_baby_need = len(bb_rm_pot_index[mask_babies_bed_potential])
 
     # More precisely :
-    count_rooms_per_svc = count_element(rooms['new_rooms_service_df'],
-                                        'all_rooms', 'new_rooms_service')
+    count_beds_per_svc = count_element(beds['new_beds_service_df'],
+                                        'all_beds', 'new_beds_service')
     count_bb_per_svc = count_element(babies['babies_service_df'],
                                      'babies', 'babies_service')
     count_bb_per_svc.sort_index(inplace=True)
 
-    compare_tot = count_bb_per_svc - count_rooms_per_svc > 0
-    compare = count_bb_per_svc - count_rooms_per_svc >= 1
+    compare_tot = count_bb_per_svc - count_beds_per_svc > 0
+    compare = count_bb_per_svc - count_beds_per_svc >= 1
 
-    if tot_baby_need > tot_new_rooms_capa:
-        logging.warning('Be careful, not enough rooms in '
+    if tot_baby_need > tot_new_beds_capa:
+        logging.warning('Be careful, not enough beds in '
                         f'{compare_tot[compare_tot].index.to_list()} service(s).')
         validation = False
 
     elif compare.any():
-        logging.warning('Be careful, enough total nb of rooms, but not enough rooms'
+        logging.warning('Be careful, enough total nb of beds, but not enough beds'
                         f' in {compare[compare].index.to_list()} service(s).')
         validation = False
 

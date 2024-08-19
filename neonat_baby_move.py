@@ -19,11 +19,11 @@ def set_logging(log_path):
     logging.basicConfig(filename=log_path, filemode='w', force=True)  # , format='%(levelname)s:%(message)s')
 
 
-def new_room_alloc_simple(babies_list, old_rooms_list, new_rooms_list):
+def new_bed_alloc_simple(babies_list, old_beds_list, new_beds_list):
     """
     From an old allocation of babies in the neonat service,
     Give the new relevant allocation while capacity reduction.
-    Take into accounts a new and an old list of rooms.
+    Take into accounts a new and an old list of beds.
     """
     # Model
     alloc_model = Container()
@@ -32,37 +32,37 @@ def new_room_alloc_simple(babies_list, old_rooms_list, new_rooms_list):
     babies = Set(container=alloc_model, name="babies", description="babies")
     babies.setRecords(babies_list)
 
-    all_rooms_list = list(set(old_rooms_list + new_rooms_list + ['out']))
-    all_rooms = Set(container=alloc_model,
-                    name="all_rooms",
-                    description="all rooms")
-    all_rooms.setRecords(all_rooms_list)    
+    all_beds_list = list(set(old_beds_list + new_beds_list + ['out']))
+    all_beds = Set(container=alloc_model,
+                    name="all_beds",
+                    description="all beds")
+    all_beds.setRecords(all_beds_list)    
     # Subset
-    old_rooms = Set(container=alloc_model,
-                    domain=all_rooms,
-                    name="old_rooms",
-                    description="old rooms")
-    old_rooms.setRecords(old_rooms_list)
+    old_beds = Set(container=alloc_model,
+                    domain=all_beds,
+                    name="old_beds",
+                    description="old beds")
+    old_beds.setRecords(old_beds_list)
 
-    new_rooms = Set(container=alloc_model,
-                    name="new_rooms",
-                    domain=all_rooms,
-                    description="new rooms")
-    new_rooms.setRecords(new_rooms_list)
+    new_beds = Set(container=alloc_model,
+                    name="new_beds",
+                    domain=all_beds,
+                    description="new beds")
+    new_beds.setRecords(new_beds_list)
 
-    old_rooms_kept = Set(container=alloc_model,
-                         name="old_rooms_kept",
-                         domain=old_rooms,
-                         description="old rooms kept for new configuration")
-    old_rooms_kept_list = [room for room in old_rooms_list
-                                if room in new_rooms_list]
-    old_rooms_kept.setRecords(old_rooms_kept_list)
+    old_beds_kept = Set(container=alloc_model,
+                         name="old_beds_kept",
+                         domain=old_beds,
+                         description="old beds kept for new configuration")
+    old_beds_kept_list = [bed for bed in old_beds_list
+                                if bed in new_beds_list]
+    old_beds_kept.setRecords(old_beds_kept_list)
     
     new_places = Set(container=alloc_model,
                      name="new_places",
-                    domain=all_rooms,
+                    domain=all_beds,
                     description="new places")
-    new_places.setRecords(new_rooms_list + ['out'])
+    new_places.setRecords(new_beds_list + ['out'])
     
     old_alloc_list = [('bb1', 'r1'),
                           ('bb2', 'r2'),
@@ -76,54 +76,54 @@ def new_room_alloc_simple(babies_list, old_rooms_list, new_rooms_list):
     map_old_alloc = Set(
         container=alloc_model,
         name='map_old_alloc',
-        domain=[babies, old_rooms],
-        description='map the old rooms to the babies',
+        domain=[babies, old_beds],
+        description='map the old beds to the babies',
         uels_on_axes=True,
         records=old_alloc_df,
     )
 
     # VARIABLES
 
-    bin_baby_room = Variable(
+    bin_baby_bed = Variable(
         container=alloc_model,
-        name="BIN_BABY_ROOM",
-        domain=[babies, all_rooms],
+        name="BIN_BABY_bed",
+        domain=[babies, all_beds],
         type="binary",
-        description="binary variable which equals 1 if baby is in room",
+        description="binary variable which equals 1 if baby is in bed",
     )
 
     # EQUATIONS
-    # Equation each baby has a room
+    # Equation each baby has a bed
 
-    eq_baby_has_room = Equation(
+    eq_baby_has_bed = Equation(
         container=alloc_model,
-        name="eq_baby_has_room",
+        name="eq_baby_has_bed",
         domain=[babies],
-        description="each baby needs a new room or goes out"
+        description="each baby needs a new bed or goes out"
     )
 
-    eq_baby_has_room[babies] = (Sum(new_places,
-                                bin_baby_room[babies, new_places])
+    eq_baby_has_bed[babies] = (Sum(new_places,
+                                bin_baby_bed[babies, new_places])
                                 == 1)
 
-    # Equation each room cannot have more babies than 1
-    eq_room = Equation(        
+    # Equation each bed cannot have more babies than 1
+    eq_bed = Equation(        
         container=alloc_model,
-        name="eq_room",
+        name="eq_bed",
         domain=[new_places],
-        description="each room can have a baby or not"
+        description="each bed can have a baby or not"
     )
     
-    eq_room[new_places] = (Sum(babies, bin_baby_room[babies, new_places])
+    eq_bed[new_places] = (Sum(babies, bin_baby_bed[babies, new_places])
                            <= 1)
 
-    obj = Sum(map_old_alloc[babies, old_rooms_kept],
-              bin_baby_room[babies, old_rooms_kept])
+    obj = Sum(map_old_alloc[babies, old_beds_kept],
+              bin_baby_bed[babies, old_beds_kept])
 
     alloc_mod = Model(
         alloc_model,
         name="alloc_model",
-        equations=[eq_baby_has_room, eq_room],
+        equations=[eq_baby_has_bed, eq_bed],
         problem="MIP",
         sense=Sense.MAX,
         objective=obj,
@@ -132,26 +132,26 @@ def new_room_alloc_simple(babies_list, old_rooms_list, new_rooms_list):
     alloc_mod.solve()
 
     obj = alloc_mod.objective_value
-    result = bin_baby_room.records[['babies', 'all_rooms', 'level']]
-    alloc_babies_rooms = result[result['level'] == 1][['babies', 'all_rooms']]
+    result = bin_baby_bed.records[['babies', 'all_beds', 'level']]
+    alloc_babies_beds = result[result['level'] == 1][['babies', 'all_beds']]
     
-    return alloc_babies_rooms, obj
+    return alloc_babies_beds, obj
 
 
 def read_input(input_path):
     """
-    Read input specific for calc_room_allocation.
+    Read input specific for calc_bed_allocation.
 
     Data description :
     - services_list : a list containing service names ;
     - babies_list : a list containing babies id ;
     - babies_service_df : a list of tuples with all possible service a baby
         can go ;
-    - old_rooms_list : list of all the previous occupied rooms
-    - new_rooms_list : list of all new rooms (for instance, withdraw the one
+    - old_beds_list : list of all the previous occupied beds
+    - new_beds_list : list of all new beds (for instance, withdraw the one
         of the historical floor of a service if summer cleaning)
-    - new_rooms_service_df : all the services a room can deliver
-    - old_alloc_df : previous room for each baby
+    - new_beds_service_df : all the services a bed can deliver
+    - old_alloc_df : previous bed for each baby
     """
     xls_read = pd.ExcelFile(input_path)
     with xls_read as xls:
@@ -177,43 +177,43 @@ def read_input(input_path):
         babies_sheet['treatment'] = nan_treatment
         babies['babies_treatment_df'] = mapping_creation(babies_sheet[['babies', 'treatment']])
 
-        # Rooms sheet
-        rooms = {}
-        rooms_sheet = pd.read_excel(xls, 'rooms')
-        rooms['all_rooms'] = rooms_sheet['all_rooms'].drop_duplicates()
-        rooms['new_rooms'] = rooms_sheet[
-                                rooms_sheet['new_rooms'] == 'yes']['all_rooms']
-        rooms['old_rooms'] = rooms_sheet[
-                                rooms_sheet['old_rooms'] == 'yes']['all_rooms']
-        rooms['going_out'] = rooms_sheet[
-                                rooms_sheet['going_out'] == 'yes']['all_rooms']
+        # beds sheet
+        beds = {}
+        beds_sheet = pd.read_excel(xls, 'beds')
+        beds['all_beds'] = beds_sheet['all_beds'].drop_duplicates()
+        beds['new_beds'] = beds_sheet[
+                                beds_sheet['new_beds'] == 'yes']['all_beds']
+        beds['old_beds'] = beds_sheet[
+                                beds_sheet['old_beds'] == 'yes']['all_beds']
+        beds['going_out'] = beds_sheet[
+                                beds_sheet['going_out'] == 'yes']['all_beds']
 
-        new_rooms_service_df = rooms_sheet[['all_rooms', 'new_rooms_service']]
-        new_rooms_service_df['new_rooms_service'] = new_rooms_service_df['new_rooms_service'].str.split(",")
-        new_rooms_service_df = new_rooms_service_df.explode('new_rooms_service')
-        rooms['new_rooms_service_df'] = mapping_creation(new_rooms_service_df)
+        new_beds_service_df = beds_sheet[['all_beds', 'new_beds_service']]
+        new_beds_service_df['new_beds_service'] = new_beds_service_df['new_beds_service'].str.split(",")
+        new_beds_service_df = new_beds_service_df.explode('new_beds_service')
+        beds['new_beds_service_df'] = mapping_creation(new_beds_service_df)
 
-        rooms['rooms_capacities_df'] = rooms_sheet[['all_rooms', 'rooms_capacities']].dropna()
-        rooms['priority'] = rooms_sheet[['all_rooms', 'priority']].dropna()
+        beds['beds_capacities_df'] = beds_sheet[['all_beds', 'beds_capacities']].dropna()
+        beds['priority'] = beds_sheet[['all_beds', 'priority']].dropna()
 
-        nan_treatment = rooms_sheet['treatment'].fillna('no_treatment')
-        rooms_sheet['treatment_list'] = nan_treatment
-        rooms['treatment'] = rooms_sheet['treatment_list'].drop_duplicates().dropna()
+        nan_treatment = beds_sheet['treatment'].fillna('no_treatment')
+        beds_sheet['treatment_list'] = nan_treatment
+        beds['treatment'] = beds_sheet['treatment_list'].drop_duplicates().dropna()
 
-        # A room with specific treatment can be assign to a baby without treatment
-        room_treatment_list = nan_treatment + ',no_treatment'
-        rooms_sheet['treatment'] = room_treatment_list
-        map_room_treatment_df = rooms_sheet[['all_rooms', 'treatment']]
-        map_room_treatment_df['treatment'] = map_room_treatment_df['treatment'].str.split(",")
-        map_room_treatment_df = map_room_treatment_df.explode('treatment')
-        rooms['rooms_treatment_df'] = mapping_creation(map_room_treatment_df.drop_duplicates())
+        # A bed with specific treatment can be assign to a baby without treatment
+        bed_treatment_list = nan_treatment + ',no_treatment'
+        beds_sheet['treatment'] = bed_treatment_list
+        map_bed_treatment_df = beds_sheet[['all_beds', 'treatment']]
+        map_bed_treatment_df['treatment'] = map_bed_treatment_df['treatment'].str.split(",")
+        map_bed_treatment_df = map_bed_treatment_df.explode('treatment')
+        beds['beds_treatment_df'] = mapping_creation(map_bed_treatment_df.drop_duplicates())
 
-    return services, babies, rooms
+    return services, babies, beds
 
 
-def calc_room_allocation(services,
+def calc_bed_allocation(services,
                          babies,
-                         rooms,
+                         beds,
                          force=False):
     """
     From an old allocation of babies in the neonat service,
@@ -222,7 +222,7 @@ def calc_room_allocation(services,
     Inputs :
     - services : a dict containing services data ;
     - babies : a dict containing babies data ;
-    - rooms : a dict containing rooms data ;
+    - beds : a dict containing beds data ;
 
     TODO : control errors :
          - modelstatus/solvestatus,
@@ -232,29 +232,29 @@ def calc_room_allocation(services,
 
     # Load inputs
     ## Mapping control
-    data_control = map_list_control(services, babies, rooms)
+    data_control = map_list_control(services, babies, beds)
     if not data_control and not force:
         raise DataError('There is some errors in your dataset mappings, please reconsider it.')
 
     ## Coherence control  
-    data_coherence_control = coherence_control(services, babies, rooms)
+    data_coherence_control = coherence_control(services, babies, beds)
     if not data_coherence_control and not force:
         raise IncoherentDataError('There is a risk of unfeasability in your dataset, please reconsider it.')
 
     services_list = services['services_list']
-    treatment_list = rooms['treatment']
+    treatment_list = beds['treatment']
 
     babies_list = babies['babies_list']
     babies_service_df = babies['babies_service_df']
     old_alloc_df = babies['old_alloc_df']
     babies_treatment_df = babies['babies_treatment_df']
 
-    all_rooms_list = rooms['all_rooms']
-    old_rooms_list = rooms['old_rooms']
-    new_rooms_list = rooms['new_rooms']
-    new_rooms_service_df = rooms['new_rooms_service_df']
-    rooms_capacities_df = rooms['rooms_capacities_df']
-    rooms_treatment_df = rooms['rooms_treatment_df']
+    all_beds_list = beds['all_beds']
+    old_beds_list = beds['old_beds']
+    new_beds_list = beds['new_beds']
+    new_beds_service_df = beds['new_beds_service_df']
+    beds_capacities_df = beds['beds_capacities_df']
+    beds_treatment_df = beds['beds_treatment_df']
 
     # Services sets, maps and parameters
     services = Set(container=alloc_model,
@@ -268,72 +268,72 @@ def calc_room_allocation(services,
                    description='treatment')
     treatment.setRecords(treatment_list)
 
-    # Rooms sets, maps and parameters
-    all_rooms = Set(container=alloc_model,
-                    name="all_rooms",
-                    description="all rooms")
-    all_rooms.setRecords(all_rooms_list)
+    # beds sets, maps and parameters
+    all_beds = Set(container=alloc_model,
+                    name="all_beds",
+                    description="all beds")
+    all_beds.setRecords(all_beds_list)
 
     ## Subset
-    old_rooms = Set(container=alloc_model,
-                    domain=all_rooms,
-                    name="old_rooms",
-                    description="old rooms")
-    old_rooms.setRecords(old_rooms_list)
+    old_beds = Set(container=alloc_model,
+                    domain=all_beds,
+                    name="old_beds",
+                    description="old beds")
+    old_beds.setRecords(old_beds_list)
 
-    new_rooms = Set(container=alloc_model,
-                    name="new_rooms",
-                    domain=all_rooms,
-                    description="new rooms")
-    new_rooms.setRecords(new_rooms_list)
+    new_beds = Set(container=alloc_model,
+                    name="new_beds",
+                    domain=all_beds,
+                    description="new beds")
+    new_beds.setRecords(new_beds_list)
 
-    old_rooms_kept = Set(container=alloc_model,
-                         name="old_rooms_kept",
-                         domain=all_rooms,
-                         description="old rooms kept for new configuration")
-    old_rooms_kept_list = old_rooms_list[old_rooms_list.isin(new_rooms_list)]
-    old_rooms_kept.setRecords(old_rooms_kept_list)
+    old_beds_kept = Set(container=alloc_model,
+                         name="old_beds_kept",
+                         domain=all_beds,
+                         description="old beds kept for new configuration")
+    old_beds_kept_list = old_beds_list[old_beds_list.isin(new_beds_list)]
+    old_beds_kept.setRecords(old_beds_kept_list)
 
     new_places = Set(container=alloc_model,
                      name="new_places",
-                     domain=all_rooms,
+                     domain=all_beds,
                      description="new places")
-    new_places_df = new_rooms_list.copy().reset_index(drop=True)
+    new_places_df = new_beds_list.copy().reset_index(drop=True)
     new_places_df.loc[len(new_places_df)] = 'out'
     new_places.setRecords(new_places_df)
 
-    map_new_rooms_service = Set(
+    map_new_beds_service = Set(
         container=alloc_model,
-        name='map_new_rooms_service',
+        name='map_new_beds_service',
         domain=[new_places, services],
-        description='map the service a room belongs to',
+        description='map the service a bed belongs to',
         uels_on_axes=True,
-        records=new_rooms_service_df
+        records=new_beds_service_df
     )
 
-    rooms_capacities = Parameter(
+    beds_capacities = Parameter(
         container=alloc_model,
-        name='rooms_capacities',
-        domain=[all_rooms],
-        description='beds number in each room',
-        records=rooms_capacities_df
+        name='beds_capacities',
+        domain=[all_beds],
+        description='beds number in each bed',
+        records=beds_capacities_df
     )
 
     priority = Parameter(
         container=alloc_model,        
-        name='rooms_priority',
-        domain=[all_rooms],
-        description='If a room is subject to priority',
-        records=rooms['priority']
+        name='beds_priority',
+        domain=[all_beds],
+        description='If a bed is subject to priority',
+        records=beds['priority']
     )
 
-    map_rooms_treatment = Set(
+    map_beds_treatment = Set(
         container=alloc_model,        
-        name='map_rooms_treatment',
-        domain=[all_rooms, treatment],
-        description='If a room allows a certain treatment',
+        name='map_beds_treatment',
+        domain=[all_beds, treatment],
+        description='If a bed allows a certain treatment',
         uels_on_axes=True,
-        records=rooms_treatment_df
+        records=beds_treatment_df
     )
 
     # Babies sets, maps and parameters
@@ -353,8 +353,8 @@ def calc_room_allocation(services,
     map_old_alloc = Set(
         container=alloc_model,
         name='map_old_alloc',
-        domain=[babies, all_rooms],
-        description='map the old rooms to the babies',
+        domain=[babies, all_beds],
+        description='map the old beds to the babies',
         uels_on_axes=True,
         records=old_alloc_df,
     )
@@ -370,16 +370,16 @@ def calc_room_allocation(services,
 
     # VARIABLES
 
-    bin_baby_room = Variable(
+    bin_baby_bed = Variable(
         container=alloc_model,
-        name="BIN_BABY_ROOM",
-        domain=[babies, all_rooms],
+        name="BIN_BABY_BED",
+        domain=[babies, all_beds],
         type="binary",
-        description="binary variable which equals 1 if baby is in room",
+        description="binary variable which equals 1 if baby is in bed",
     )
 
     # EQUATIONS
-    # Equation each baby has a room with the the relevant service
+    # Equation each baby has a bed with the the relevant service
 
     eq_baby_relevant_service = Equation(
         container=alloc_model,
@@ -390,13 +390,13 @@ def calc_room_allocation(services,
 
     eq_baby_relevant_service[babies] = (Sum(services,
                                             Sum((map_babies_service[babies, services],
-                                                 map_new_rooms_service[new_places, services]),
-                                                bin_baby_room[babies, new_places]
+                                                 map_new_beds_service[new_places, services]),
+                                                bin_baby_bed[babies, new_places]
                                             )
                                         )
                                         == 1)
 
-    # Equation each baby has a room with the relevant treatment
+    # Equation each baby has a bed with the relevant treatment
 
     eq_baby_relevant_treatment = Equation(
         container=alloc_model,
@@ -407,42 +407,42 @@ def calc_room_allocation(services,
 
     eq_baby_relevant_treatment[babies] = (Sum(treatment,
                                             Sum((map_babies_treatment[babies, treatment],
-                                                 map_rooms_treatment[new_places, treatment]),
-                                                bin_baby_room[babies, new_places]
+                                                 map_beds_treatment[new_places, treatment]),
+                                                bin_baby_bed[babies, new_places]
                                             )
                                         )
                                         == 1)
 
-    # Equation a baby has only one room
+    # Equation a baby has only one bed
 
-    eq_baby_one_room = Equation(
+    eq_baby_one_bed = Equation(
         container=alloc_model,
-        name="eq_baby_one_room",
+        name="eq_baby_one_bed",
         domain=[babies],
-        description="a baby should have only one room"
+        description="a baby should have only one bed"
     )
 
-    eq_baby_one_room[babies] = (Sum(all_rooms,
-                                    bin_baby_room[babies, all_rooms])
+    eq_baby_one_bed[babies] = (Sum(all_beds,
+                                    bin_baby_bed[babies, all_beds])
                                 == 1)
 
-    # Equation each room cannot have more babies than its capacity
-    eq_room_capacity = Equation(
+    # Equation each bed cannot have more babies than its capacity
+    eq_bed_capacity = Equation(
         container=alloc_model,
-        name="eq_room_capacity",
-        domain=[new_rooms],
-        description="each room have limited bed number"
+        name="eq_bed_capacity",
+        domain=[new_beds],
+        description="each bed have limited bed number"
     )
 
-    eq_room_capacity[new_rooms] = (Sum(babies, bin_baby_room[babies, new_rooms])
-                                   <= rooms_capacities[new_rooms])
+    eq_bed_capacity[new_beds] = (Sum(babies, bin_baby_bed[babies, new_beds])
+                                   <= beds_capacities[new_beds])
 
     # OBJ : minimize the number of changes
     obj = (
-        Sum(Domain(babies, all_rooms).where[~map_old_alloc[babies, all_rooms]],
+        Sum(Domain(babies, all_beds).where[~map_old_alloc[babies, all_beds]],
             Sum((map_babies_service[[babies, services]],
-                 map_new_rooms_service[new_places[all_rooms], services]),
-                Ord(services)**priority[all_rooms] * bin_baby_room[babies, all_rooms]
+                 map_new_beds_service[new_places[all_beds], services]),
+                Ord(services)**priority[all_beds] * bin_baby_bed[babies, all_beds]
             )
         )
     )
@@ -462,31 +462,31 @@ def calc_room_allocation(services,
                          'There might be a problem of data.'))
 
     obj = alloc_mod.objective_value
-    result = bin_baby_room.records[['babies', 'all_rooms', 'level']]
-    alloc_babies_rooms = result[result['level'] == 1][['babies', 'all_rooms']]
+    result = bin_baby_bed.records[['babies', 'all_beds', 'level']]
+    alloc_babies_beds = result[result['level'] == 1][['babies', 'all_beds']]
 
     # Add old alloc to result to visualize which babies has moved
-    summary = alloc_babies_rooms.merge(old_alloc_df.reset_index(),
+    summary = alloc_babies_beds.merge(old_alloc_df.reset_index(),
                                        how='left',
                                        on='babies')
 
     summary = summary.drop(columns=[0])
-    summary['move'] = summary['all_rooms'] != summary['old_alloc_list']
+    summary['move'] = summary['all_beds'] != summary['old_alloc_list']
     summary.columns = ['babies', 'new_place', 'old_place', 'should_move']
     return summary, obj
 
 
-def write_output(xls_path, alloc_babies_rooms):
+def write_output(xls_path, alloc_babies_beds):
     """
     Write results of babies allocation in excel.
     """
     with pd.ExcelWriter(xls_path) as writer:  
-        alloc_babies_rooms.to_excel(writer, sheet_name='babies_allocation')
+        alloc_babies_beds.to_excel(writer, sheet_name='babies_allocation')
 
 
 def run_neonat():
     """
-    From a scenario_name, run a scenario of new room allocation.
+    From a scenario_name, run a scenario of new bed allocation.
     Scenario_name is the name of the folder,
     which include an Excel file "input.xls" to be read by the script.
     TODO : creer une fonction run_neonat_with_xls(scenario),
@@ -508,12 +508,12 @@ def run_neonat():
 
     set_logging(log_path=log_path)
 
-    services, babies, rooms = read_input(xls_input_path)
+    services, babies, beds = read_input(xls_input_path)
 
-    result, obj = calc_room_allocation(services, babies, rooms, force)
+    result, obj = calc_bed_allocation(services, babies, beds, force)
 
     baby_move_nb = result['should_move'].sum()
-    print(f'{baby_move_nb} out of {len(result)} babies should change rooms.')
+    print(f'{baby_move_nb} out of {len(result)} babies should change beds.')
     print(result)
     ###
     print(f'obj fun is equal to {obj}')

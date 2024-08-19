@@ -7,8 +7,8 @@ du service en néonatalogie, dans un contexte de déménagement.
 On constate un tel besoin dans les cas suivants :
 - Quand les effectifs de bébés hospitalisés en néonatalogie sont conséquents ;
 - Quand il existe des contraintes de traitements spécifiques aux bébés,
-applicables à seulement certaines chambres ;
-- Quand il y a un besoin de faire plusieurs changements de chambres.
+applicables à seulement certains lits ;
+- Quand il y a un besoin de faire plusieurs changements de lits.
 
 L'objectif du package est de fournir un nouveau plan d'allocation de lits adapté
 aux soins de chaque bébé, tout en minimisant le nombre de bébés déplacés.
@@ -53,40 +53,39 @@ qui s'affichent alors dans l'invite de commande :
 Vous pouvez dupliquer le fichier d'input du dossier "scenarios/exemple" comme base à compléter.
 
 Le fichier Excel d'entrée de l'algorithme est composé de 3 onglets :
-*babies*, *rooms*, *services*.
+*babies*, *beds*, *services*.
 
 Vous êtes ensuite invités à remplir :
 - Dans l'onglet *babies* :
     - La liste des bébés (colonne **babies**) ;
     - Le service auquel le bébé correspondant est affecté (colonne **babies_service**) ;
     - L'ancien lit dans lequel ils étaient (colonne **old_alloc_list**) ;
-    - Son traitement spécifique si le bébé nécessite une chambre spécifique (colonne **treatment**) :
-      Ce traitement doit obligatoirement être présent dans la liste de traitements de l'onglet *rooms*.
+    - Son traitement spécifique si le bébé nécessite un lit spécifique (colonne **treatment**) :
+      Ce traitement doit obligatoirement être présent dans la liste de traitements de l'onglet *beds*.
 
-- Dans l'onglet *rooms* :
+- Dans l'onglet *beds* :
     - Ne pas toucher la ligne "out" ;
-    - La liste de TOUS LES LITS (colonne **all_rooms**).
-      *rooms* désigne un lit. Ainsi, une chambre double aura 2 *rooms*.
-    - La liste des NOUVEAUX LITS (colonne **new_rooms**).
+    - La liste de TOUS LES LITS (colonne **all_beds**).
+    - La liste des NOUVEAUX LITS (colonne **new_beds**).
       Inscrire *yes* dans les lignes correspondantes.
-    - La liste des ANCIENS LITS (colonne **old_rooms**).
+    - La liste des ANCIENS LITS (colonne **old_beds**).
       Inscrire *yes* dans les lignes correspondantes.
     - Ne pas toucher la colonne **going_out** ;
-    - Le service que la chambre peut proposer (colonne **new_rooms_service**).
+    - Le service que le lit peut proposer (colonne **new_beds_service**).
       Plusieurs réponses possibles, à écrire dans une même cellule Excel en séparant avec une ",".
       Une seule sera choisie par le modèle, en accord avec le besoin du bébé.
-    - L'ancien service que la chambre proposait (colonne **old_rooms_service**).
+    - L'ancien service que le lit proposait (colonne **old_beds_service**).
       Pas nécessaire au calcul, seulement informatif.
-    - Le nombre de lit par chambre (colonne **rooms_capacities**).
-      Laisser à 1 car chaque identifiant de "chambre" doit être celui d'un lit (cf remarque **all_rooms**).
-    - La priorité de la chambre (colonne **priority**) :
-      si la chambre comporte plusieurs services possible, on peut imposer une priorité
+    - Le nombre de place par lit (colonne **beds_capacities**).
+      Laisser à 1.
+    - La priorité donnée à une liste de services (colonne **priority**) :
+      si le lit comporte plusieurs services possible, on peut imposer une priorité
       en inscrivant "TRUE" dans la cellule correspondante.
-      Le modèle cherchera alors à mettre dans cette chambre un bébé dont le service potentiel
-      est "le plus haut" (cad avec un rang le plus faible).
-    - Le traitement spécifique possible dans la chambre (colonne **treatment**) :
+      Le modèle cherchera alors à mettre dans ce lit un bébé dont le service potentiel
+      est "le plus haut" (cad avec un rang le plus faible dans la colonne *services* de l'onglet *services*).
+    - Le traitement spécifique possible dans le lit (colonne **treatment**) :
       Quelque soit le traitement inscrit ou si la cellule est vide,
-      n'importe quel bébé "sans traitement" peut intégrer cette chambre.
+      n'importe quel bébé "sans traitement" peut intégrer ce lit.
 
 - Dans l'onglet *services* :
     - La liste des services de néonatalogie disponibles.
@@ -95,7 +94,7 @@ Vous êtes ensuite invités à remplir :
 > Ne mettre aucun accent dans les différents éléments de l'Excel.
 > Veiller à la cohérence des données entre elles. Par exemple, si dans l'onglet *services*,
 vous avez écrit les services suivants : ['reanimation', 'soins', 'neonat'], vous ne pouvez
-pas affecter un enfant ou une chambre à un service 'rea', car il n'apparait pas tel quel
+pas affecter un enfant ou un lit à un service 'rea', car il n'apparait pas tel quel
 dans la liste de l'onglet *services*.
 
 ## Différents avertissements
