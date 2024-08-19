@@ -18,7 +18,7 @@ def excel_control(xls_file):
     validation = True
     dico_columns = {
         'services': ['services'],
-        'babies': ['babies', 'babies_potential', 'old_alloc_list', 'treatment'],
+        'babies': ['babies', 'babies_service', 'old_alloc_list', 'treatment'],
         'rooms': ['all_rooms', 'new_rooms', 'old_rooms', 'going_out',
                   'new_rooms_service','old_rooms_service', 'rooms_capacities',
                   'priority', 'treatment']
@@ -28,7 +28,6 @@ def excel_control(xls_file):
     if not validation_tab_names:
         print('Error in Excel Worksheet names.')
         print('You should have 3 worksheets : "babies", "rooms" and "services".')
-        # TODO : raise an error ?
         validation = False
     
     for key in dico_columns.keys():
@@ -38,7 +37,6 @@ def excel_control(xls_file):
         validation_col_names = all(columns_ds.isin(xls_file_col))
         if not validation_col_names:
             print(f'Error in the column names of the tab ***{key}*** (line 1 of the sheet).')
-            # TODO : raise an error ?
             validation = False
 
     return validation
@@ -67,9 +65,9 @@ def map_list_control(services, babies, rooms):
 
     # Check mapping
     ## Babies should not pretend to a service that is not declared in sheet "services"
-    babypot = babies['babies_potential_df']
+    babypot = babies['babies_service_df']
     srvc = services['services_list']
-    validation = assert_map_in_set(validation, babypot, 'babies_potential', srvc)
+    validation = assert_map_in_set(validation, babypot, 'babies_service', srvc)
 
     ## Babies should not have an old room that is not declared in sheet "rooms"
     bboldalloc = babies['old_alloc_df']
@@ -90,7 +88,7 @@ def map_list_control(services, babies, rooms):
     map_svc_treat_bb = pd.concat([bbtreat.reset_index(),
                                     babypot.reset_index()],
                                     axis=1
-                                )[['babies_potential', 'treatment']].drop_duplicates()
+                                )[['babies_service', 'treatment']].drop_duplicates()
     map_svc_treat_rm = pd.concat([roomsrvc.reset_index(),
                                rooms['rooms_treatment_df'].reset_index()],
                                axis=1)[['new_rooms_service', 'treatment']].drop_duplicates()
@@ -111,7 +109,7 @@ def map_list_control(services, babies, rooms):
 def count_element(mapping, dim1, dim2):
     """
     Function calculating the effective number of place available per service,
-    considering babies potential or rooms places.
+    considering babies service or rooms places.
     If a room propose a place in 'rea' or in 'soins', there is 0.5 place for both.
     Return a pd.Series.
     """
@@ -122,7 +120,7 @@ def count_element(mapping, dim1, dim2):
     map_df[f'count_{dim1}'] = count_dim1
     count_dim1_per_dim2_df = map_df.groupby([map_df.index.get_level_values(dim2)]).sum()
     count_dim1_per_dim2 = count_dim1_per_dim2_df[f'count_{dim1}']
-    if (dim2 in ['new_rooms_service', 'babies_potential']
+    if (dim2 in ['new_rooms_service', 'babies_service']
         and 'leave_hospital' in count_dim1_per_dim2):
         count_dim1_per_dim2 = count_dim1_per_dim2.drop('leave_hospital')
 
@@ -142,15 +140,15 @@ def coherence_control(services, babies, rooms):
     new_rooms_capa = room_capacities[room_capacities['all_rooms'].isin(new_rooms)]
     tot_new_rooms_capa = new_rooms_capa['rooms_capacities'].sum()
 
-    bb_rm_pot_index = babies['babies_potential_df'].index
-    mask_babies_room_potential = ~bb_rm_pot_index.get_level_values('babies_potential').isin(['leave_hospital'])
+    bb_rm_pot_index = babies['babies_service_df'].index
+    mask_babies_room_potential = ~bb_rm_pot_index.get_level_values('babies_service').isin(['leave_hospital'])
     tot_baby_need = len(bb_rm_pot_index[mask_babies_room_potential])
 
     # More precisely :
     count_rooms_per_svc = count_element(rooms['new_rooms_service_df'],
                                         'all_rooms', 'new_rooms_service')
-    count_bb_per_svc = count_element(babies['babies_potential_df'],
-                                     'babies', 'babies_potential')
+    count_bb_per_svc = count_element(babies['babies_service_df'],
+                                     'babies', 'babies_service')
     count_bb_per_svc.sort_index(inplace=True)
 
     compare_tot = count_bb_per_svc - count_rooms_per_svc > 0

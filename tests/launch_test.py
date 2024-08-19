@@ -160,7 +160,7 @@ def test_calc_room_allocation_nrt5(caplog):
         obj, alloc_babies_rooms = call_calc_room_allocation('nrt5')
 
     caplog.set_level(logging.INFO)
-    assert caplog.messages == ["Be careful, there might be an error in >>> babies_potential <<< data : are the element >>> ['neoe'] <<< present in other relevant datasets ?",
+    assert caplog.messages == ["Be careful, there might be an error in >>> babies_service <<< data : are the element >>> ['neoe'] <<< present in other relevant datasets ?",
                                "Be careful, there might be an error in >>> old_alloc_list <<< data : are the element >>> ['r19'] <<< present in other relevant datasets ?",
                                "Be careful, there might be an error in >>> treatment <<< data : are the element >>> ['catheter'] <<< present in other relevant datasets ?",
                                "Be careful, there might be an error in >>> new_rooms_service <<< data : are the element >>> ['reak'] <<< present in other relevant datasets ?",
@@ -219,7 +219,7 @@ def test_calc_room_allocation_log():
     content = log_file.read()
 
     assert content == (
-        "WARNING:root:Be careful, there might be an error in >>> babies_potential <<< data :"
+        "WARNING:root:Be careful, there might be an error in >>> babies_service <<< data :"
         " are the element >>> ['neoe'] <<< present in other relevant datasets ?\n"
         "WARNING:root:Be careful, there might be an error in >>> old_alloc_list <<< data :"
         " are the element >>> ['r19'] <<< present in other relevant datasets ?\n"

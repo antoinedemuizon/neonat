@@ -19,9 +19,9 @@ Il s'appuie sur un simple fichier [Excel](#présentation-de-linput), et se lance
 Pour installer la bibliothèque, Vous aurez besoin d'installer :
 - [python](https://www.python.org/downloads/windows/) version **3.9.13**;
   - ATTENTION : Cliquer sur **Add Python to PATH** pour insérer les liens pertinents dans le PATH :
-  ![alt text](install_python_add_to_path.JPG) ;
-  Puis ajouter les fichiers sources de Python à la racine, en inscrivant **C:\Python39**
-  à l'option **Customize install location** ;
+  ![alt text](install_python_add_to_path.JPG)
+  Puis dans l'option **Customize install location**, écrire **C:\Python39**,
+  afin d'ajouter les fichiers sources de Python à la racine ;
 - [git](https://git-scm.com/download/) et choisir le système d'exploitation
 parmi Windows, Linux, macOS ;
 
@@ -58,7 +58,7 @@ Le fichier Excel d'entrée de l'algorithme est composé de 3 onglets :
 Vous êtes ensuite invités à remplir :
 - Dans l'onglet *babies* :
     - La liste des bébés (colonne **babies**) ;
-    - Le service auquel le bébé correspondant est affecté (colonne **babies_potential**) ;
+    - Le service auquel le bébé correspondant est affecté (colonne **babies_service**) ;
     - L'ancien lit dans lequel ils étaient (colonne **old_alloc_list**) ;
     - Son traitement spécifique si le bébé nécessite une chambre spécifique (colonne **treatment**) :
       Ce traitement doit obligatoirement être présent dans la liste de traitements de l'onglet *rooms*.
@@ -136,5 +136,5 @@ In the repository 'neonat' :
 I introduced a minimalist log file, which mainly gives info about risk of unfeasability.
 The possible error of data are of two categories :
 - Mismatch between worksheet in the Excel. For exemple, in the sheet **babies**,
-one has a *babies_potential* to go to "reanimation", whereas "reanimation" isn't defined in **services**
+one has a *babies_service* to go to "reanimation", whereas "reanimation" isn't defined in **services**
 -->

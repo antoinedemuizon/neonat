@@ -145,7 +145,7 @@ def read_input(input_path):
     Data description :
     - services_list : a list containing service names ;
     - babies_list : a list containing babies id ;
-    - babies_potential_df : a list of tuples with all possible service a baby
+    - babies_service_df : a list of tuples with all possible service a baby
         can go ;
     - old_rooms_list : list of all the previous occupied rooms
     - new_rooms_list : list of all new rooms (for instance, withdraw the one
@@ -167,10 +167,10 @@ def read_input(input_path):
         babies = {}
         babies_sheet = pd.read_excel(xls, 'babies')
         babies['babies_list'] = babies_sheet['babies'].drop_duplicates()
-        babies_potential_df = babies_sheet[['babies', 'babies_potential']]
-        babies_potential_df['babies_potential'] = babies_potential_df['babies_potential'].str.split(",")
-        babies_potential_df = babies_potential_df.explode('babies_potential')
-        babies['babies_potential_df'] = mapping_creation(babies_potential_df)
+        babies_service_df = babies_sheet[['babies', 'babies_service']]
+        babies_service_df['babies_service'] = babies_service_df['babies_service'].str.split(",")
+        babies_service_df = babies_service_df.explode('babies_service')
+        babies['babies_service_df'] = mapping_creation(babies_service_df)
         babies['old_alloc_df'] = mapping_creation(babies_sheet[['babies', 'old_alloc_list']])
 
         nan_treatment = babies_sheet['treatment'].fillna('no_treatment')
@@ -217,8 +217,7 @@ def calc_room_allocation(services,
                          force=False):
     """
     From an old allocation of babies in the neonat service,
-    Gives the new relevant allocation while rooms number reduces services includes
-    new rooms list.
+    Gives the new relevant allocation while the context may have changed.
 
     Inputs :
     - services : a dict containing services data ;
@@ -246,7 +245,7 @@ def calc_room_allocation(services,
     treatment_list = rooms['treatment']
 
     babies_list = babies['babies_list']
-    babies_potential_df = babies['babies_potential_df']
+    babies_service_df = babies['babies_service_df']
     old_alloc_df = babies['old_alloc_df']
     babies_treatment_df = babies['babies_treatment_df']
 
@@ -341,13 +340,13 @@ def calc_room_allocation(services,
     babies = Set(container=alloc_model, name="babies", description="babies")
     babies.setRecords(babies_list)
 
-    map_babies_potential = Set(
+    map_babies_service = Set(
         container=alloc_model,
-        name='map_babies_potential',
+        name='map_babies_service',
         domain=[babies, services],
         description='map the possible service a baby can move to',
         uels_on_axes=True,
-        records=babies_potential_df
+        records=babies_service_df
     )
 
 
@@ -390,7 +389,7 @@ def calc_room_allocation(services,
     )
 
     eq_baby_relevant_service[babies] = (Sum(services,
-                                            Sum((map_babies_potential[babies, services],
+                                            Sum((map_babies_service[babies, services],
                                                  map_new_rooms_service[new_places, services]),
                                                 bin_baby_room[babies, new_places]
                                             )
@@ -441,7 +440,7 @@ def calc_room_allocation(services,
     # OBJ : minimize the number of changes
     obj = (
         Sum(Domain(babies, all_rooms).where[~map_old_alloc[babies, all_rooms]],
-            Sum((map_babies_potential[[babies, services]],
+            Sum((map_babies_service[[babies, services]],
                  map_new_rooms_service[new_places[all_rooms], services]),
                 Ord(services)**priority[all_rooms] * bin_baby_room[babies, all_rooms]
             )
