@@ -39,7 +39,7 @@ Ensuite vous pouvez récupérer le projet depuis Github. Pour cela :
 ## Lancer le calcul
 
 Pour lancer le calcul, il faut :
-- Dans le répertoire "scenario", créer un dossier **nom_de_votre_scenario** ;
+- Dans le répertoire "scenarios", créer un dossier **nom_de_votre_scenario** ;
 - Y insérer un excel dûment rempli, nommé **input_nom_de_votre_scenario.xlsx** ;
 - Double-cliquer sur *launch_main.bat*, puis remplir les champs suivants,
 qui s'affichent alors dans l'invite de commande :
@@ -50,7 +50,9 @@ qui s'affichent alors dans l'invite de commande :
 
 ## Présentation de l'input
 
-Le fichier Excel d'entrée de l'algorithme est commposé de 3 onglets :
+Vous pouvez dupliquer le fichier d'input du dossier "scenarios/exemple" comme base à compléter.
+
+Le fichier Excel d'entrée de l'algorithme est composé de 3 onglets :
 *babies*, *rooms*, *services*.
 
 Vous êtes ensuite invités à remplir :
@@ -63,9 +65,8 @@ Vous êtes ensuite invités à remplir :
 
 - Dans l'onglet *rooms* :
     - Ne pas toucher la ligne "out" ;
-    - La liste de TOUS LES LITS (colonne **all_rooms**). Ne pas modifier les cellules grises.
-      On appelle abusivement *rooms* l'identifiant des lits. Ainsi, dans le cas de chambres doubles,
-      chaque lit a son propre identifiant et ses propres caractéristiques.
+    - La liste de TOUS LES LITS (colonne **all_rooms**).
+      *rooms* désigne un lit. Ainsi, une chambre double aura 2 *rooms*.
     - La liste des NOUVEAUX LITS (colonne **new_rooms**).
       Inscrire *yes* dans les lignes correspondantes.
     - La liste des ANCIENS LITS (colonne **old_rooms**).
@@ -96,8 +97,6 @@ Vous êtes ensuite invités à remplir :
 vous avez écrit les services suivants : ['reanimation', 'soins', 'neonat'], vous ne pouvez
 pas affecter un enfant ou une chambre à un service 'rea', car il n'apparait pas tel quel
 dans la liste de l'onglet *services*.
-
-Vous pouvez dupliquer le fichier d'input du dossier "scenario/exemple" comme base à compléter.
 
 ## Différents avertissements
 
