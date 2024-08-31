@@ -165,11 +165,3 @@ def coherence_control(services, babies, beds):
         validation = False
 
     return validation
-
-
-class DataError(Exception):
-    pass
-
-
-class IncoherentDataError(Exception):
-    pass

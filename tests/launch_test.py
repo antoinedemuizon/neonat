@@ -3,28 +3,10 @@ import pandas as pd
 import pytest
 import logging
 
-from neonat_baby_move import (new_bed_alloc_simple, calc_bed_allocation,
-                              read_input, set_logging, SCRIPT_DIR)
+from neonat_baby_move import (set_logging, SCRIPT_DIR)
 
-
-def test_new_bed_alloc_simple():
-    babies = ['bb1', 'bb2', 'bb3', 'bb4']
-    old_beds = ['r1', 'r2', 'r3', 'r4']
-    new_beds = ['r1', 'r2', 'r3']
-
-    result, obj = new_bed_alloc_simple(babies_list=babies,
-                                        old_beds_list=old_beds,
-                                        new_beds_list=new_beds)
-    alloc_babies_beds = result.reset_index(drop=True)
-    assert obj == 3.0
-    assert (alloc_babies_beds == pd.DataFrame([['bb1', 'r1'],
-                                               ['bb2', 'r2'],
-                                               ['bb3', 'r3'],
-                                               ['bb4', 'out']],
-                                               columns=['babies', 'all_beds'])
-                                               ).all().all()
-    
-    print(alloc_babies_beds)
+from read_input import ReadInput
+from calc_bed_allocation import CalcBedAllocation
 
 
 def call_calc_bed_allocation(nrt_name):
@@ -36,12 +18,17 @@ def call_calc_bed_allocation(nrt_name):
     """
     input_path = osp.join(SCRIPT_DIR, 'tests', nrt_name,
                           'input_' + nrt_name + '.xlsx')
-    services, babies, beds = read_input(input_path)
-    result, obj = calc_bed_allocation(
-        services=services,
-        babies=babies,
-        beds=beds
+
+    bed_alloc_dataset = ReadInput(input_path)
+    bed_alloc_dataset.read_input_from_excel()
+    bed_alloc_scenario = CalcBedAllocation(
+        inputs=bed_alloc_dataset
     )
+    bed_alloc_scenario.declare_model()
+    bed_alloc_scenario.run_model()
+
+    obj = bed_alloc_scenario.obj
+    result = bed_alloc_scenario.result_summary
     alloc_babies_beds = result.reset_index(drop=True)[['babies', 'new_place']]
     return obj, alloc_babies_beds
 
