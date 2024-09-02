@@ -3,10 +3,10 @@ import pandas as pd
 import pytest
 import logging
 
-from neonat_baby_move import (set_logging, SCRIPT_DIR)
+from run_bed_allocation import set_logging
 
-from read_input import ReadInput
-from calc_bed_allocation import CalcBedAllocation
+from scripts.read_input import ReadInput
+from scripts.calc_bed_allocation import (CalcBedAllocation, SCRIPT_DIR)
 
 
 def call_calc_bed_allocation(nrt_name):
@@ -16,7 +16,7 @@ def call_calc_bed_allocation(nrt_name):
     Return : objective function value (float), allocation of babies per beds
         (pd.DataFrame)
     """
-    input_path = osp.join(SCRIPT_DIR, 'tests', nrt_name,
+    input_path = osp.join(SCRIPT_DIR, '../tests', nrt_name,
                           'input_' + nrt_name + '.xlsx')
 
     bed_alloc_dataset = ReadInput(input_path)
@@ -193,7 +193,7 @@ def test_calc_bed_allocation_log():
     Test log file generation.
     """
     test_name = 'test_log'
-    log_path = osp.join(SCRIPT_DIR, 'tests', test_name, 'log_' + test_name + '.log')
+    log_path = osp.join(SCRIPT_DIR, '../tests', test_name, 'log_' + test_name + '.log')
     set_logging(log_path)
 
     with pytest.raises(Exception) as e_info:

@@ -21,7 +21,7 @@ IF NOT EXIST scenarios\%NAME% (
     pause
 )
 
-python neonat_baby_move.py %NAME% %FORCE%
+python run_bed_allocation.py %NAME% %FORCE%
 
 echo Calculation is over.
 

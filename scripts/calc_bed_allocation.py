@@ -1,11 +1,10 @@
 import os.path as osp
 import pandas as pd
-import logging
 
 from gamspy import (Container, Set, Parameter, Variable,
                     Equation, Model, Sum, Sense, Domain, Ord)
 
-from read_input import ReadInput
+from scripts.read_input import ReadInput
 
 
 SCRIPT_DIR = osp.dirname(__file__)

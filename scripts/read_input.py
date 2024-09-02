@@ -2,8 +2,8 @@ import os.path as osp
 import pandas as pd
 import logging
 
-from utils import mapping_creation, assert_map_in_set, count_element
-from exc import DataError, IncoherentDataError
+from scripts.utils import mapping_creation, assert_map_in_set, count_element
+from scripts.exc import DataError, IncoherentDataError
 
 
 SCRIPT_DIR = osp.dirname(__file__)

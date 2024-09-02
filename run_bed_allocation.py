@@ -3,11 +3,10 @@ import pandas as pd
 import argparse
 import logging
 
-from read_input import ReadInput
-from calc_bed_allocation import CalcBedAllocation
+from scripts.read_input import ReadInput
+from scripts.calc_bed_allocation import (CalcBedAllocation, SCRIPT_DIR)
 
 
-SCRIPT_DIR = osp.dirname(__file__)
 pd.options.mode.copy_on_write = True
 
 
@@ -28,11 +27,11 @@ def run_neonat():
 
     scenario_name = args.scenario_name
     force = args.force
-    xls_input_path = osp.join(SCRIPT_DIR, 'scenarios', scenario_name,
+    xls_input_path = osp.join(SCRIPT_DIR, '../scenarios', scenario_name,
                               'input_' + scenario_name + '.xlsx')
-    xls_output_path = osp.join(SCRIPT_DIR, 'scenarios', scenario_name,
+    xls_output_path = osp.join(SCRIPT_DIR, '../scenarios', scenario_name,
                                'output_' + scenario_name + '.xlsx')
-    log_path = osp.join(SCRIPT_DIR, 'scenarios', scenario_name,
+    log_path = osp.join(SCRIPT_DIR, '../scenarios', scenario_name,
                         'log_' + scenario_name + '.log')
 
     set_logging(log_path=log_path)
