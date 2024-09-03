@@ -282,6 +282,19 @@ class CalcBedAllocation():
         with pd.ExcelWriter(self.output_path) as writer:  
             self.result_summary.to_excel(writer, sheet_name='babies_allocation')
 
+    def run_allocation(self):
+        """
+        Go over the whole process :
+        - read input,
+        - build the model,
+        - solve it,
+        - write output in an excel file.
+        """
+        self.inputs.read_input_from_excel()
+        self.declare_model()
+        self.solve_model()
+        self.write_output()
+
 
 if __name__ == "__main__":
     input_path = osp.join(SCRIPT_DIR, 'tests', 'nrt1',

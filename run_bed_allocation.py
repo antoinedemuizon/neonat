@@ -37,15 +37,12 @@ def run_neonat():
     set_logging(log_path=log_path)
 
     bed_alloc_dataset = ReadInput(input_path=xls_input_path, force=force)
-    bed_alloc_dataset.read_input_from_excel()
 
     bed_alloc_scenario = CalcBedAllocation(
         inputs=bed_alloc_dataset,
         output_path=xls_output_path
     )
-    bed_alloc_scenario.declare_model()
-    bed_alloc_scenario.run_model()
-    bed_alloc_scenario.write_output()
+    bed_alloc_scenario.run_allocation()
 
     result = bed_alloc_scenario.result_summary
     baby_move_nb = result['should_move'].sum()
