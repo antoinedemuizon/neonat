@@ -11,7 +11,9 @@ pd.options.mode.copy_on_write = True
 
 
 class ReadInput():
-
+    """
+    Class handling the input of allocation runs.
+    """
     def __init__(self, input_path=None, force=False):
         self.input_path = input_path
         self.is_valid = True
@@ -30,24 +32,40 @@ class ReadInput():
 
     def read_input_from_excel(self):
         """
-        Read input specific for calc_bed_allocation.
+        Read input for CalcBedAllocation from Excel template.
 
         Data description :
         - services_list : a list containing service names ;
+
         - babies_list : a list containing babies id ;
         - babies_service_df : a list of tuples with all possible service a baby
             can go ;
-        - old_beds_list : list of all the previous occupied beds
-        - new_beds_list : list of all new beds (for instance, withdraw the one
-            of the historical floor of a service if summer cleaning)
-        - new_beds_service_df : all the services a bed can deliver
-        - old_alloc_df : previous bed for each baby
+        - old_alloc_df : previous bed for each baby ;
+        - babies_treatment_df : if a baby has specific treatments ;
+
+        - all_beds : list of all the beds in the model ;
+        - new_beds : list of all new beds (for instance, withdraw the one
+            of the historical floor of a service if summer cleaning) ;
+        - old_beds : list of all the previous occupied beds ;
+        - going_out : specify which "bed" signifies in fact that the baby goes out
+            (alwways the bed "out")
+        - new_beds_service_df : all the services a bed can deliver ;
+        - beds_capacities_df : how many babies can be the bed (1 per default);
+        - priority : if a bed can be assigned to multiple services, one can ask
+            for a priorisation between services ;
+        - treatment : list of possible treatments ;
+        - beds_treatment_df : if the room permits a specific treatment.
         """
-        self.xls_pd_df = pd.ExcelFile(self.input_path)
+        if self.input_path:
+            self.xls_pd_df = pd.ExcelFile(self.input_path)
+        else:
+            msg = ('No input_path were given.')
+            logging.error(msg)
+            raise ValueError(msg)
         with self.xls_pd_df as xls:
             self.excel_format_control()
             if not self.is_valid:
-                raise AssertionError('The input Excel file has not the good column names.')
+                raise DataError('The input Excel file has not the good column names.')
             # Service sheet
             services_sheet = pd.read_excel(xls, 'services')
             self.services_data['services_list'] = list(services_sheet['services'].drop_duplicates())

@@ -12,7 +12,10 @@ pd.options.mode.copy_on_write = True
 
 
 class CalcBedAllocation():
-
+    """
+    Class handling a bed allocation scenario.
+    Require a ReadInput object.
+    """
     def __init__(self, inputs: ReadInput, output_path=None):
         self.inputs = inputs
         self.output_path = output_path
@@ -239,9 +242,10 @@ class CalcBedAllocation():
             )
         )
 
-    def run_model(self):
+    def solve_model(self):
         """
-        
+        Launch solve of the model declared in the declare_model method.
+        Process a post-treatment in result_summary.
         """
         alloc_mod = Model(
             self.alloc_model,
@@ -291,7 +295,7 @@ if __name__ == "__main__":
         output_path=outputpath
     )
     bed_alloc_scenario.declare_model()
-    bed_alloc_scenario.run_model()
+    bed_alloc_scenario.solve_model()
     bed_alloc_scenario.write_output()
     print(bed_alloc_scenario.result_summary)
     print(bed_alloc_scenario.obj)

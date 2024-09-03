@@ -25,7 +25,7 @@ def call_calc_bed_allocation(nrt_name):
         inputs=bed_alloc_dataset
     )
     bed_alloc_scenario.declare_model()
-    bed_alloc_scenario.run_model()
+    bed_alloc_scenario.solve_model()
 
     obj = bed_alloc_scenario.obj
     result = bed_alloc_scenario.result_summary
