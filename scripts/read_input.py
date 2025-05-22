@@ -231,6 +231,35 @@ class ReadInput():
                                       ' please reconsider it.')
 
 
+class ReadInputWithNurse(ReadInput):
+    """
+    Class handling the input of allocation runs, including nurse modelling.
+    """
+    def __init__(self, input_path=None, force=False):
+        ReadInput.__init__(self, input_path, force)
+        self.dico_columns['babies'].append()
+        self.dico_columns['nurses'] = []
+        self.nurse_data = {}
+
+    def read_all_input_from_excel(self):
+        """
+        Nurses data :
+        """
+        self.read_input_from_excel()
+
+        with self.xls_pd_df as xls:
+            # Babies sheet
+            babies_sheet = pd.read_excel(xls, 'babies')
+            self.babies_data['nurse_truc'] = babies_sheet[['babies', 'babies_nurses']]
+
+            # Nurses sheet
+            nurses_sheet = pd.read_excel(xls, 'beds')
+            self.nurse_data['all_nurses'] = nurses_sheet[['all_nurses', 'bidule']]
+
+        self.map_list_control()
+        self.coherence_control()
+
+
 if __name__ == "__main__":
     input_path = osp.join(SCRIPT_DIR, 'tests', 'nrt1',
                               'input_' + 'nrt1' + '.xlsx')
